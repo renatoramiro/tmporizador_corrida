@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer Cíclico Flexível</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4F46E5">
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #1e293b;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h2 { margin-top: 0; color: #94a3b8; font-size: 1.2rem; }
+    
+    .timer-display-box {
+      background: #0f172a;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #334155;
+    }
+    .status {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #38bdf8;
+      min-height: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .display {
+      font-size: 3.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: #f8fafc;
+    }
+
+    .controls { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-start { background: #22c55e; color: #fff; }
+    .btn-stop { background: #ef4444; color: #fff; }
+    .btn-add { background: #4f46e5; color: #fff; padding: 8px 12px; margin-bottom: 1rem; width: 100%; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Lista de Etapas */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .step-item.active {
+      border-color: #38bdf8;
+      background: #1e293b;
+    }
+    .step-item input[type="text"] {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      width: 80px;
+    }
+    .step-time-inputs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+    .step-time-inputs input[type="number"] {
+      width: 42px;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #fff;
+      text-align: center;
+    }
+    .btn-remove {
+      background: transparent;
+      color: #ef4444;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+      flex: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Timer Cíclico</h2>
+
+    <div class="timer-display-box">
+      <div id="status" class="status">Pronto</div>
+      <div id="display" class="display">00:00</div>
+    </div>
+
+    <div class="controls">
+      <button id="btnPlay" class="btn-start">Play</button>
+      <button id="btnPause" class="btn-stop" disabled>Pausar</button>
+    </div>
+
+    <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
+
+    <div id="stepsList" class="steps-list">
+      <!-- Etapas geradas via JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // Estrutura inicial padrão
+let etapas = [
+  { id: Date.now(), nome: "Caminhada", min: 2, seg: 0 },
+  { id: Date.now() + 1, nome: "Corrida", min: 1, seg: 30 }
+];
+
+let indiceAtual = 0;
+let tempoRestante = 0;
+let intervalId = null;
+let rodando = false;
+let emTransicao = false; // Bloqueia a contagem durante os 3 segundos de vibração
+
+const display = document.getElementById('display');
+const statusText = document.getElementById('status');
+const stepsContainer = document.getElementById('stepsList');
+const btnPlay = document.getElementById('btnPlay');
+const btnPause = document.getElementById('btnPause');
+const btnAdd = document.getElementById('btnAdd');
+
+function renderizarEtapas() {
+  stepsContainer.innerHTML = '';
+  etapas.forEach((etapa, idx) => {
+    const div = document.createElement('div');
+    div.className = `step-item ${rodando && idx === indiceAtual ? 'active' : ''}`;
+    div.innerHTML = `
+      <input type="text" value="${etapa.nome}" ${rodando ? 'disabled' : ''} onchange="atualizarNome(${idx}, this.value)">
+      <div class="step-time-inputs">
+        <input type="number" min="0" max="99" value="${etapa.min}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'min', this.value)">m
+        <input type="number" min="0" max="59" value="${etapa.seg}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'seg', this.value)">s
+      </div>
+      ${etapas.length > 1 && !rodando ? `<button class="btn-remove" onclick="removerEtapa(${idx})">&times;</button>` : ''}
+    `;
+    stepsContainer.appendChild(div);
+  });
+}
+
+function atualizarNome(index, val) {
+  etapas[index].nome = val || `Etapa ${index + 1}`;
+}
+
+function atualizarTempo(index, tipo, val) {
+  const num = parseInt(val) || 0;
+  etapas[index][tipo] = num;
+  if (!rodando && index === 0) resetarDisplayInicial();
+}
+
+function adicionarEtapa() {
+  etapas.push({
+    id: Date.now(),
+    nome: `Etapa ${etapas.length + 1}`,
+    min: 1,
+    seg: 0
+  });
+  renderizarEtapas();
+}
+
+function removerEtapa(index) {
+  if (etapas.length <= 1) return;
+  etapas.splice(index, 1);
+  if (indiceAtual >= etapas.length) indiceAtual = 0;
+  renderizarEtapas();
+  resetarDisplayInicial();
+}
+
+function formatarTempo(segundos) {
+  const min = Math.floor(segundos / 60).toString().padStart(2, '0');
+  const seg = (segundos % 60).toString().padStart(2, '0');
+  return `${min}:${seg}`;
+}
+
+function vibrar3Segundos() {
+  if ('vibrate' in navigator) {
+    // Padrao: vibra 800ms, pausa 200ms, vibra 800ms, pausa 200ms, vibra 1000ms (Total ~3s)
+    navigator.vibrate([800, 200, 800, 200, 1000]);
+  }
+}
+
+function proximaEtapa() {
+  emTransicao = true;
+  vibrar3Segundos();
+  statusText.textContent = "Trocando de etapa...";
+
+  // Aguarda exatamente 3 segundos vibrando antes de iniciar o próximo
+  setTimeout(() => {
+    if (!rodando) return; // Se o usuário pausou durante os 3s
+    
+    indiceAtual = (indiceAtual + 1) % etapas.length;
+    carregarEtapaAtual();
+    emTransicao = false;
+  }, 3000);
+}
+
+function carregarEtapaAtual() {
+  const etapa = etapas[indiceAtual];
+  tempoRestante = (etapa.min * 60) + etapa.seg;
+  statusText.textContent = etapa.nome;
+  display.textContent = formatarTempo(tempoRestante);
+  renderizarEtapas();
+}
+
+function tick() {
+  if (emTransicao) return; // Não faz nada enquanto estiver vibrando nos 3s
+
+  if (tempoRestante > 0) {
+    tempoRestante--;
+    display.textContent = formatarTempo(tempoRestante);
+  } else {
+    proximaEtapa();
+  }
+}
+
+function iniciar() {
+  if (rodando || etapas.length === 0) return;
+
+  rodando = true;
+  btnPlay.disabled = true;
+  btnPause.disabled = false;
+  btnAdd.disabled = true;
+
+  if (tempoRestante === 0 && !emTransicao) {
+    indiceAtual = 0;
+    carregarEtapaAtual();
+  } else {
+    renderizarEtapas();
+  }
+
+  intervalId = setInterval(tick, 1000);
+}
+
+function pausar() {
+  rodando = false;
+  emTransicao = false;
+  clearInterval(intervalId);
+  
+  if ('vibrate' in navigator) {
+    navigator.vibrate(0); // Cancela a vibração se estiver no meio dos 3s
+  }
+
+  btnPlay.disabled = false;
+  btnPause.disabled = true;
+  btnAdd.disabled = false;
+  statusText.textContent = `${etapas[indiceAtual].nome} (Pausado)`;
+  renderizarEtapas();
+}
+
+function resetarDisplayInicial() {
+  if (!rodando && etapas.length > 0) {
+    indiceAtual = 0;
+    const e = etapas[0];
+    tempoRestante = (e.min * 60) + e.seg;
+    statusText.textContent = e.nome;
+    display.textContent = formatarTempo(tempoRestante);
+  }
+}
+
+btnPlay.addEventListener('click', iniciar);
+btnPause.addEventListener('click', pausar);
+btnAdd.addEventListener('click', adicionarEtapa);
+
+// Inicialização
+renderizarEtapas();
+resetarDisplayInicial();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+  </script>
+</body>
+</html>
