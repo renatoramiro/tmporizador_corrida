@@ -9,8 +9,7 @@
   "plugins": {
     "LocalNotifications": {
       "smallIcon": "ic_notification",
-      "iconColor": "#4F46E5",
-      "sound": "default"
+      "iconColor": "#4F46E5"
     }
   }
 }

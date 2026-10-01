@@ -60,6 +60,16 @@ if (xml.includes('<application')) {
 // Normaliza linhas em branco e remove comentário residual
 xml = xml.replace(/\n{3,}/g, '\n\n');
 xml = xml.replace(/\s*<!-- Permissions -->\s*/g, '\n');
+
+// versionName do package.json + versionCode fixo (incrementar ao publicar)
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+if (xml.includes('android:versionCode')) {
+  xml = xml.replace(/android:versionCode="\d+"/, 'android:versionCode="2"');
+  xml = xml.replace(/android:versionName="[^"]*"/, `android:versionName="${pkg.version}"`);
+} else {
+  xml = xml.replace('<manifest', `<manifest android:versionCode="2" android:versionName="${pkg.version}"`);
+}
+
 fs.writeFileSync(manifestPath, xml);
-console.log('AndroidManifest.xml: permissões atualizadas');
+console.log('AndroidManifest.xml: permissões e versão atualizadas');
 console.log('prepare-android concluído');

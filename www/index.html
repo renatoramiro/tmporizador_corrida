@@ -160,7 +160,7 @@
     // ---------- Estado ----------
     // O tempo é medido por timestamp (deadline), não por decremento de contador.
     // Assim o timer não sofre drift nem atrasa quando o Android limita setInterval em background.
-    const TRANSICAO_MS = 3000;
+    const TRANSICAO_MS = 5000;
     const STORAGE_KEY = 'timer-ciclico-etapas';
 
     let etapas = carregarEtapas() || [
@@ -239,7 +239,7 @@
         const nomeAtual = etapas[idx].nome;
         const nomeProx = etapas[(idx + 1) % etapas.length].nome;
         alertas.push({ at: faseFim, nomeAtual, nomeProx });
-        // após o alerta: 3s de transição + próxima etapa
+        // após o alerta: transição + próxima etapa
         faseFim = faseFim + TRANSICAO_MS + duracaoEtapaMs(etapas[(idx + 1) % etapas.length]);
         idx = (idx + 1) % etapas.length;
       }
@@ -255,6 +255,32 @@
       notifIds = [];
     }
 
+    /**
+     * Canal com vibração + importância MAX.
+     * No Android 8+ o comportamento de som/vibração vem DO CANAL — o canal "Default"
+     * do Capacitor não vibra e, se o sound apontar para arquivo inexistente, fica mudo.
+     * Por isso criamos um canal dedicado (id novo = config nova de verdade).
+     */
+    async function garantirCanalAlertas() {
+      const ln = pluginLocalNotifications();
+      if (!ln || typeof ln.createChannel !== 'function') return 'default';
+      try {
+        await ln.createChannel({
+          id: 'timer-alertas-v2',
+          name: 'Alertas do treino',
+          description: 'Vibra e toca ao trocar de etapa',
+          importance: 5, // NotificationManager.IMPORTANCE_MAX
+          vibration: true,
+          lights: true,
+          lightColor: '#4F46E5',
+          visibility: 1,
+        });
+        return 'timer-alertas-v2';
+      } catch (_) {
+        return 'default';
+      }
+    }
+
     async function agendarNotificacoesNativas() {
       const ln = pluginLocalNotifications();
       if (!ln) return;
@@ -268,6 +294,7 @@
 
       await cancelarNotificacoesNativas();
 
+      const channelId = await garantirCanalAlertas();
       const alertas = calcularProximosAlertas(50);
       const idBase = 1000;
       // allowWhileIdle: false — em Doze o allowWhileIdle só deixa 1 alerta a cada 9 min,
@@ -280,8 +307,9 @@
           title: a.nomeProx,
           body: `Trocando de etapa: ${a.nomeAtual} → ${a.nomeProx}`,
           schedule: { at: new Date(a.at), allowWhileIdle: false },
-          sound: 'default',
           smallIcon: 'ic_notification',
+          channelId,
+          autoCancel: true,
           extra: { etapa: a.nomeProx },
         }));
 
@@ -364,15 +392,16 @@
     }
 
     // ---------- Vibração ----------
-    function vibrar3Segundos() {
+    function vibrarTransicao() {
       if ('vibrate' in navigator) {
-        // vibra 800ms, pausa 200ms, vibra 800ms, pausa 200ms, vibra 1000ms (~3s)
-        navigator.vibrate([800, 200, 800, 200, 1000]);
+        // ~5s: 3 pulsos curtos + 1 longo
+        navigator.vibrate([800, 200, 800, 200, 800, 200, 1000]);
       }
     }
 
     function vibrarRestante(ms) {
       if ('vibrate' in navigator && ms > 0) {
+        // reforça a vibração ao retomar transição pausada
         navigator.vibrate(Math.min(ms, TRANSICAO_MS));
       }
     }
@@ -498,7 +527,7 @@
       display.textContent = formatarTempo(Math.ceil(TRANSICAO_MS / 1000));
       statusText.textContent = 'Trocando de etapa...';
       renderizarEtapas();
-      vibrar3Segundos();
+      vibrarTransicao();
       tocarAlertaTransicao();
     }
 
@@ -557,7 +586,7 @@
         renderizarEtapas();
         if (atrasoMs > TRANSICAO_MS) {
           tocarAlertaTransicao();
-          vibrar3Segundos();
+          vibrarTransicao();
         }
       }
     }
@@ -574,7 +603,7 @@
       btnAdd.disabled = true;
 
       if (emTransicao) {
-        // Continua a transição de onde parou (ex.: pausou nos 3s de vibração)
+        // Continua a transição de onde parou (ex.: pausou durante a vibração)
         deadline = Date.now() + Math.max(0, pausedRestanteMs ?? 0);
         vibrarRestante(pausedRestanteMs ?? 0);
       } else if (pausedRestanteMs != null) {
