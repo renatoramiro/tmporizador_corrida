@@ -158,30 +158,8 @@ public class TimerService extends Service {
     }
 
     private void fireAlert() {
-        try {
-            Vibrator vibrator;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                VibratorManager vm = (VibratorManager) getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-                vibrator = vm != null ? vm.getDefaultVibrator() : null;
-            } else {
-                vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            }
-            if (vibrator != null && vibrator.hasVibrator()) {
-                long[] pattern = {0, 800, 200, 800, 200, 800, 200, 1000};
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
-                } else {
-                    vibrator.vibrate(pattern, -1);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        try {
-            ToneGenerator tone = new ToneGenerator(AudioAttributes.USAGE_ALARM, 100);
-            tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 200);
-            tone.release();
-        } catch (Exception ignored) {
-        }
+        // Som STREAM_ALARM + vibração (~5s) — funciona com a tela bloqueada
+        AlarmAlert.fire(this);
         NotificationHelper.showAlert(this, nextStageName(), "Trocando de etapa: " + stageName() + " → " + nextStageName());
     }
 

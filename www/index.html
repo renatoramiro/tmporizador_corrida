@@ -187,8 +187,9 @@
     }
 
     function pluginTimerNative() {
-      // Capacitor.Plugins.Timernative nem sempre existe sem bundler;
-      // registerPlugin() cria o proxy para o plugin nativo.
+      // 1) JavascriptInterface nativo (mais estável que o proxy do Capacitor)
+      if (window.TimerAndroid) return window.TimerAndroid;
+      // 2) Proxy do Capacitor
       try {
         if (window.__timerNative) return window.__timerNative;
         if (window.Capacitor?.Plugins?.TimerNative) {
@@ -201,6 +202,40 @@
         }
       } catch (_) { /* ignora */ }
       return null;
+    }
+
+    function nativoStart(stagesJson, index, deadlineMs, inTransition, transitionMs) {
+      const tn = pluginTimerNative();
+      if (!tn?.start) return Promise.resolve(false);
+      try {
+        // JavascriptInterface usa tipos primitivos; o plugin Capacitor usa objeto
+        if (window.TimerAndroid) {
+          window.TimerAndroid.start(stagesJson, index, deadlineMs, !!inTransition, transitionMs);
+          return Promise.resolve(true);
+        }
+        return Promise.resolve(tn.start({
+          stages: stagesJson,
+          index,
+          deadline: deadlineMs,
+          inTransition: !!inTransition,
+          transitionMs,
+        }));
+      } catch (_) {
+        return Promise.resolve(false);
+      }
+    }
+
+    function nativoStop() {
+      try {
+        if (window.TimerAndroid) window.TimerAndroid.stop();
+        else pluginTimerNative()?.stop?.();
+      } catch (_) { /* ignora */ }
+    }
+
+    function nativoAlertNow() {
+      try {
+        if (window.TimerAndroid?.alertNow) window.TimerAndroid.alertNow();
+      } catch (_) { /* ignora */ }
     }
 
     // Áudio silencioso em loop: ajuda a manter o processo/WebView vivo com a tela apagada
@@ -264,10 +299,7 @@
     }
 
     async function cancelarNotificacoesNativas() {
-      const tn = pluginTimerNative();
-      if (tn?.stop) {
-        try { await tn.stop(); } catch (_) { /* ignora */ }
-      }
+      nativoStop();
       const ln = pluginLocalNotifications();
       if (ln?.cancel && notifIds.length > 0) {
         try {
@@ -304,22 +336,20 @@
     }
 
     async function agendarNotificacoesNativas() {
-      const tn = pluginTimerNative();
-      if (tn?.start) {
-        // Caminho principal: foreground service + AlarmManager.setAlarmClock
-        // — vibra e mostra o countdown na tela de bloqueio.
-        try {
-          if (!deadline && pausedRestanteMs != null) {
-            deadline = Date.now() + Math.max(0, pausedRestanteMs);
-          }
-          await tn.start({
-            stages: JSON.stringify(etapas.map((e) => ({ nome: e.nome, min: e.min, seg: e.seg }))),
-            index: indiceAtual,
-            deadline: deadline || (Date.now() + (pausedRestanteMs || 0)),
-            inTransition: !!emTransicao,
-            transitionMs: TRANSICAO_MS,
-          });
-        } catch (_) { /* fallback abaixo */ }
+      // Caminho principal: foreground service + AlarmManager.setAlarmClock
+      // — toca som de alarme (~5s) e vibra na troca, mesmo com a tela bloqueada.
+      if (!deadline && pausedRestanteMs != null) {
+        deadline = Date.now() + Math.max(0, pausedRestanteMs);
+      }
+      if (deadline) {
+        const stagesJson = JSON.stringify(etapas.map((e) => ({ nome: e.nome, min: e.min, seg: e.seg })));
+        await nativoStart(
+          stagesJson,
+          indiceAtual,
+          deadline,
+          !!emTransicao,
+          TRANSICAO_MS
+        );
       }
 
       // Fallback / reforço: notificações locais do Capacitor
@@ -579,6 +609,8 @@
       renderizarEtapas();
       vibrarTransicao();
       tocarAlertaTransicao();
+      // Reforço: dispara o alarme nativo também quando a página detecta a troca
+      nativoAlertNow();
     }
 
     function finalizarTransicao() {

@@ -8,5 +8,11 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         registerPlugin(TimerPlugin.class);
+        try {
+            getBridge()
+                .getWebView()
+                .addJavascriptInterface(new TimerJsBridge(this), "TimerAndroid");
+        } catch (Exception ignored) {
+        }
     }
 }

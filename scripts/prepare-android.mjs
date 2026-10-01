@@ -12,6 +12,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'assets', 'android');
 const javaSrc = path.join(root, 'android-src', 'com', 'temporizadorciclico', 'app');
 const resDir = path.join(root, 'android', 'app', 'src', 'main', 'res');
+const rawDir = path.join(root, 'assets', 'android', 'raw');
+const resRaw = path.join(root, 'android', 'app', 'src', 'main', 'res', 'raw');
 const javaDst = path.join(root, 'android', 'app', 'src', 'main', 'java', 'com', 'temporizadorciclico', 'app');
 const manifestPath = path.join(root, 'android', 'app', 'src', 'main', 'AndroidManifest.xml');
 
@@ -30,6 +32,15 @@ for (const folder of fs.readdirSync(assets)) {
     fs.copyFileSync(path.join(srcDir, file), path.join(dstDir, file));
   }
   console.log('copiado res/' + folder);
+}
+
+// --- Áudio de alarme (res/raw/alarm_beep.wav) ---
+if (fs.existsSync(rawDir)) {
+  fs.mkdirSync(resRaw, { recursive: true });
+  for (const file of fs.readdirSync(rawDir)) {
+    fs.copyFileSync(path.join(rawDir, file), path.join(resRaw, file));
+    console.log('copiado res/raw/' + file);
+  }
 }
 
 // --- Java nativo ---
@@ -51,6 +62,7 @@ const PERMS = [
   'android.permission.INTERNET',
   'android.permission.FOREGROUND_SERVICE',
   'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
+  'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
 ];
 
 const SERVICE_XML = `
