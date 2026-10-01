@@ -186,6 +186,12 @@
       return window.Capacitor?.Plugins?.LocalNotifications || null;
     }
 
+    function pluginTimerNative() {
+      // Plugin nativo: AlarmManager.setAlarmClock + foreground service
+      // (vibra e mostra o countdown com a tela bloqueada)
+      return window.Capacitor?.Plugins?.TimerNative || null;
+    }
+
     // Áudio silencioso em loop: ajuda a manter o processo/WebView vivo com a tela apagada
     // (sem isso o Android suspende os timers JS). Volume baixíssimo — não incomoda na corrida.
     let keepAliveAudio = null;
@@ -247,11 +253,16 @@
     }
 
     async function cancelarNotificacoesNativas() {
+      const tn = pluginTimerNative();
+      if (tn?.stop) {
+        try { await tn.stop(); } catch (_) { /* ignora */ }
+      }
       const ln = pluginLocalNotifications();
-      if (!ln || notifIds.length === 0) return;
-      try {
-        await ln.cancel({ notifications: notifIds.map((id) => ({ id })) });
-      } catch (_) { /* ignora */ }
+      if (ln?.cancel && notifIds.length > 0) {
+        try {
+          await ln.cancel({ notifications: notifIds.map((id) => ({ id })) });
+        } catch (_) { /* ignora */ }
+      }
       notifIds = [];
     }
 
@@ -282,8 +293,27 @@
     }
 
     async function agendarNotificacoesNativas() {
+      const tn = pluginTimerNative();
+      if (tn?.start) {
+        // Caminho principal: foreground service + AlarmManager.setAlarmClock
+        // — vibra e mostra o countdown na tela de bloqueio.
+        try {
+          if (!deadline && pausedRestanteMs != null) {
+            deadline = Date.now() + Math.max(0, pausedRestanteMs);
+          }
+          await tn.start({
+            stages: JSON.stringify(etapas.map((e) => ({ nome: e.nome, min: e.min, seg: e.seg }))),
+            index: indiceAtual,
+            deadline: deadline || (Date.now() + (pausedRestanteMs || 0)),
+            inTransition: !!emTransicao,
+            transitionMs: TRANSICAO_MS,
+          });
+        } catch (_) { /* fallback abaixo */ }
+      }
+
+      // Fallback / reforço: notificações locais do Capacitor
       const ln = pluginLocalNotifications();
-      if (!ln) return;
+      if (!ln?.schedule) return;
 
       try {
         const perm = await ln.requestPermissions();
@@ -292,21 +322,27 @@
         return;
       }
 
-      await cancelarNotificacoesNativas();
+      // cancela só as notificações do plugin (o service tem stop próprio)
+      if (notifIds.length > 0) {
+        try {
+          await ln.cancel({ notifications: notifIds.map((id) => ({ id })) });
+        } catch (_) { /* ignora */ }
+        notifIds = [];
+      }
 
       const channelId = await garantirCanalAlertas();
       const alertas = calcularProximosAlertas(50);
       const idBase = 1000;
-      // allowWhileIdle: false — em Doze o allowWhileIdle só deixa 1 alerta a cada 9 min,
-      // o que quebra intervalos curtos de corrida. Com SCHEDULE_EXACT_ALARM, setExact
-      // dispara no horário enquanto o aparelho não está em deep-doze (ex.: durante o treino).
       const notifications = alertas
         .filter((a) => a.at > Date.now() + 250)
         .map((a, i) => ({
           id: idBase + i,
           title: a.nomeProx,
           body: `Trocando de etapa: ${a.nomeAtual} → ${a.nomeProx}`,
-          schedule: { at: new Date(a.at), allowWhileIdle: false },
+          schedule: {
+            at: new Date(a.at).toISOString(),
+            allowWhileIdle: false,
+          },
           smallIcon: 'ic_notification',
           channelId,
           autoCancel: true,
@@ -393,6 +429,8 @@
 
     // ---------- Vibração ----------
     function vibrarTransicao() {
+      // No app nativo quem vibra é o TimerService/AlertReceiver (funciona com tela apagada).
+      if (isNative()) return;
       if ('vibrate' in navigator) {
         // ~5s: 3 pulsos curtos + 1 longo
         navigator.vibrate([800, 200, 800, 200, 800, 200, 1000]);
@@ -591,11 +629,16 @@
       }
     }
 
-    function iniciar() {
+    async function iniciar() {
       if (rodando || etapas.length === 0) return;
 
       unlockAudio();
       tocarBeepInicio();
+      // pede permissão de notificação (Android 13+) antes de agendar
+      try {
+        const ln = pluginLocalNotifications();
+        if (ln?.requestPermissions) await ln.requestPermissions();
+      } catch (_) { /* ignora */ }
 
       rodando = true;
       btnPlay.disabled = true;
