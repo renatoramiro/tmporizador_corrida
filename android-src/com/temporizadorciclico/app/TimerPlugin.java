@@ -45,6 +45,19 @@ public class TimerPlugin extends Plugin {
             }
             if (transitionMs < 500) transitionMs = 5000;
 
+            // Android 12+: sem alarme exato o setAlarmClock ainda funciona, mas
+            // o sistema pode mostrar o ícone de despertador — está ok para um timer.
+            try {
+                android.app.AlarmManager am =
+                    (android.app.AlarmManager) getContext().getSystemService(android.content.Context.ALARM_SERVICE);
+                if (am != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !AlarmScheduler.canExact(am)) {
+                    Intent settings = new Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                    settings.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    getContext().startActivity(settings);
+                }
+            } catch (Exception ignored) {
+            }
+
             Intent i = new Intent(getContext(), TimerService.class);
             i.setAction(TimerService.ACTION_START);
             i.putExtra(TimerService.EXTRA_STAGES, stages);

@@ -7,6 +7,7 @@ import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
@@ -14,17 +15,22 @@ import android.os.VibratorManager;
 /**
  * Alerta de troca de etapa que funciona com a tela bloqueada.
  *
- * Vibração sozinha é suprimida pelo Android com a tela apagada em apps comuns.
- * O caminho confiável é som em STREAM_ALARM (canal de despertador), que o sistema
- * deixa tocar com o aparelho bloqueado. A vibração entra como reforço.
+ * - Som em USAGE_ALARM (STREAM_ALARM): o sistema deixa tocar com o aparelho bloqueado.
+ * - Vibração com VibrationAttributes.USAGE_ALARM (Android 13+): exigido para
+ *   vibrar em segundo plano; sem esse atributo o Android suprime a vibração.
  */
 public final class AlarmAlert {
 
     private static MediaPlayer mediaPlayer;
+    private static long lastFireAt = 0;
 
     private AlarmAlert() {}
 
+    /** Evita dispare duplo (service + receiver + JS) na mesma troca. */
     public static void fire(Context ctx) {
+        long now = System.currentTimeMillis();
+        if (now - lastFireAt < 2500) return;
+        lastFireAt = now;
         vibrate(ctx);
         playAlarmSound(ctx);
     }
@@ -50,9 +56,21 @@ public final class AlarmAlert {
                 vibrator = (Vibrator) ctx.getSystemService(Context.VIBRATOR_SERVICE);
             }
             if (vibrator == null || !vibrator.hasVibrator()) return;
+
+            // ~5s: 3 pulsos curtos + 1 longo
             long[] pattern = {0, 800, 200, 800, 200, 800, 200, 1000};
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1));
+            VibrationEffect effect = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                ? VibrationEffect.createWaveform(pattern, -1)
+                : null;
+
+            if (Build.VERSION.SDK_INT >= 33) {
+                // Android 13+: sem USAGE_ALARM a vibração em background é suprimida
+                VibrationAttributes attrs = new VibrationAttributes.Builder()
+                    .setUsage(VibrationAttributes.USAGE_ALARM)
+                    .build();
+                vibrator.vibrate(effect, attrs);
+            } else if (effect != null) {
+                vibrator.vibrate(effect);
             } else {
                 vibrator.vibrate(pattern, -1);
             }
@@ -65,7 +83,6 @@ public final class AlarmAlert {
             stop();
             MediaPlayer mp = MediaPlayer.create(ctx, R.raw.alarm_beep);
             if (mp == null) {
-                // fallback: tone generator em loop por 5s
                 playToneFallback();
                 return;
             }
@@ -77,7 +94,6 @@ public final class AlarmAlert {
                     .build()
             );
             mp.setLooping(false);
-            // força volume no canal de alarme (o sistema pode deixar em 0 por padrão)
             try {
                 AudioManager am = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
                 if (am != null) {
@@ -107,7 +123,6 @@ public final class AlarmAlert {
             android.media.ToneGenerator tone =
                 new android.media.ToneGenerator(AudioManager.STREAM_ALARM, 100);
             Handler h = new Handler(Looper.getMainLooper());
-            // 5 bipes (~5s)
             for (int i = 0; i < 5; i++) {
                 final int delay = i * 1000;
                 h.postDelayed(() -> {

@@ -607,10 +607,20 @@
       display.textContent = formatarTempo(Math.ceil(TRANSICAO_MS / 1000));
       statusText.textContent = 'Trocando de etapa...';
       renderizarEtapas();
-      vibrarTransicao();
-      tocarAlertaTransicao();
-      // Reforço: dispara o alarme nativo também quando a página detecta a troca
-      nativoAlertNow();
+      // Um único alerta por troca: nativo se existir (som STREAM_ALARM + vibração);
+      // senão vibração/áudio web.
+      const usouNativo = (() => {
+        try {
+          nativoAlertNow();
+          return !!window.TimerAndroid;
+        } catch (_) {
+          return false;
+        }
+      })();
+      if (!usouNativo) {
+        vibrarTransicao();
+        tocarAlertaTransicao();
+      }
     }
 
     function finalizarTransicao() {
