@@ -187,9 +187,20 @@
     }
 
     function pluginTimerNative() {
-      // Plugin nativo: AlarmManager.setAlarmClock + foreground service
-      // (vibra e mostra o countdown com a tela bloqueada)
-      return window.Capacitor?.Plugins?.TimerNative || null;
+      // Capacitor.Plugins.Timernative nem sempre existe sem bundler;
+      // registerPlugin() cria o proxy para o plugin nativo.
+      try {
+        if (window.__timerNative) return window.__timerNative;
+        if (window.Capacitor?.Plugins?.TimerNative) {
+          window.__timerNative = window.Capacitor.Plugins.TimerNative;
+          return window.__timerNative;
+        }
+        if (window.Capacitor?.registerPlugin) {
+          window.__timerNative = window.Capacitor.registerPlugin('TimerNative');
+          return window.__timerNative;
+        }
+      } catch (_) { /* ignora */ }
+      return null;
     }
 
     // Áudio silencioso em loop: ajuda a manter o processo/WebView vivo com a tela apagada
@@ -429,8 +440,9 @@
 
     // ---------- Vibração ----------
     function vibrarTransicao() {
-      // No app nativo quem vibra é o TimerService/AlertReceiver (funciona com tela apagada).
-      if (isNative()) return;
+      // Vibra via JS quando a página está viva (tela ligada / app em foco).
+      // Com a tela bloqueada quem assume é o TimerService nativo.
+      if (document.visibilityState === 'hidden') return;
       if ('vibrate' in navigator) {
         // ~5s: 3 pulsos curtos + 1 longo
         navigator.vibrate([800, 200, 800, 200, 800, 200, 1000]);
