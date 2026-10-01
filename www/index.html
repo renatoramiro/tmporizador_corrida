@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Timer Cíclico Flexível</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#4F46E5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Timer">
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: #1e293b;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h2 { margin-top: 0; color: #94a3b8; font-size: 1.2rem; }
+
+    .timer-display-box {
+      background: #0f172a;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      border: 1px solid #334155;
+    }
+    .status {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #38bdf8;
+      min-height: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .display {
+      font-size: 3.5rem;
+      font-weight: 800;
+      font-family: monospace;
+      color: #f8fafc;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .controls { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-start { background: #22c55e; color: #fff; }
+    .btn-stop { background: #ef4444; color: #fff; }
+    .btn-add { background: #4f46e5; color: #fff; padding: 8px 12px; margin-bottom: 1rem; width: 100%; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Lista de Etapas */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 250px;
+      overflow-y: auto;
+      text-align: left;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+    }
+    .step-item.active {
+      border-color: #38bdf8;
+      background: #1e293b;
+    }
+    .step-item input[type="text"] {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      outline: none;
+      width: 80px;
+    }
+    .step-time-inputs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+    .step-time-inputs input[type="number"] {
+      width: 42px;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #fff;
+      text-align: center;
+    }
+    .btn-remove {
+      background: transparent;
+      color: #ef4444;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+      flex: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Timer Cíclico</h2>
+
+    <div class="timer-display-box">
+      <div id="status" class="status">Pronto</div>
+      <div id="display" class="display">00:00</div>
+    </div>
+
+    <div class="controls">
+      <button id="btnPlay" class="btn-start">Play</button>
+      <button id="btnPause" class="btn-stop" disabled>Pausar</button>
+    </div>
+
+    <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
+
+    <div id="stepsList" class="steps-list">
+      <!-- Etapas geradas via JavaScript -->
+    </div>
+  </div>
+
+  <script>
+    // ---------- Estado ----------
+    // O tempo é medido por timestamp (deadline), não por decremento de contador.
+    // Assim o timer não sofre drift nem atrasa quando o Android limita setInterval em background.
+    const TRANSICAO_MS = 3000;
+    const STORAGE_KEY = 'timer-ciclico-etapas';
+
+    let etapas = carregarEtapas() || [
+      { id: Date.now(), nome: "Caminhada", min: 2, seg: 0 },
+      { id: Date.now() + 1, nome: "Corrida", min: 1, seg: 30 }
+    ];
+
+    let indiceAtual = 0;
+    let rodando = false;
+    let emTransicao = false;
+    let deadline = null;          // Date.now() quando a fase atual (etapa ou transição) termina
+    let pausedRestanteMs = null;  // tempo restante ao pausar; null = não iniciado / reiniciar do zero
+    let notifIds = [];            // ids das notificações nativas agendadas (Capacitor)
+
+    // ---------- Capacitor (app Android) ----------
+    // No APK, as notificações locais disparam com a tela bloqueada — é o "alarme" do treino.
+    // No navegador, ficamos só com vibração/áudio (limitação do PWA).
+    function isNative() {
+      return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    }
+
+    function pluginLocalNotifications() {
+      return window.Capacitor?.Plugins?.LocalNotifications || null;
+    }
+
+    // Áudio silencioso em loop: ajuda a manter o processo/WebView vivo com a tela apagada
+    // (sem isso o Android suspende os timers JS). Volume baixíssimo — não incomoda na corrida.
+    let keepAliveAudio = null;
+
+    function iniciarKeepAliveAudio() {
+      try {
+        if (keepAliveAudio) return;
+        keepAliveAudio = new Audio('silence.wav');
+        keepAliveAudio.loop = true;
+        keepAliveAudio.volume = 0.01;
+        const p = keepAliveAudio.play();
+        if (p && p.catch) p.catch(() => { /* autoplay bloqueado */ });
+      } catch (_) { /* ignora */ }
+    }
+
+    function pararKeepAliveAudio() {
+      try {
+        if (keepAliveAudio) {
+          keepAliveAudio.pause();
+          keepAliveAudio = null;
+        }
+      } catch (_) { /* ignora */ }
+    }
+
+    async function nativoKeepAwake(ligar) {
+      // Wake Lock web (suportado no WebView do Capacitor). Sem plugin extra.
+      if (ligar) await requestWakeLock();
+      else releaseWakeLock();
+    }
+
+    /** Percorre a frente do treino e lista os instantes de fim de etapa (quando o alerta deve soar). */
+    function calcularProximosAlertas(max = 50) {
+      const alertas = [];
+      if (etapas.length === 0) return alertas;
+
+      let idx = indiceAtual;
+      let emTrans = emTransicao;
+      let faseFim = deadline != null
+        ? deadline
+        : Date.now() + Math.max(0, pausedRestanteMs ?? 0);
+
+      // Se já estamos em transição, o alerta do fim da etapa anterior já saiu;
+      // avança para o fim da próxima etapa.
+      if (emTrans) {
+        idx = (idx + 1) % etapas.length;
+        emTrans = false;
+        faseFim = faseFim + duracaoEtapaMs(etapas[idx]);
+      }
+
+      for (let i = 0; i < max; i++) {
+        const nomeAtual = etapas[idx].nome;
+        const nomeProx = etapas[(idx + 1) % etapas.length].nome;
+        alertas.push({ at: faseFim, nomeAtual, nomeProx });
+        // após o alerta: 3s de transição + próxima etapa
+        faseFim = faseFim + TRANSICAO_MS + duracaoEtapaMs(etapas[(idx + 1) % etapas.length]);
+        idx = (idx + 1) % etapas.length;
+      }
+      return alertas;
+    }
+
+    async function cancelarNotificacoesNativas() {
+      const ln = pluginLocalNotifications();
+      if (!ln || notifIds.length === 0) return;
+      try {
+        await ln.cancel({ notifications: notifIds.map((id) => ({ id })) });
+      } catch (_) { /* ignora */ }
+      notifIds = [];
+    }
+
+    async function agendarNotificacoesNativas() {
+      const ln = pluginLocalNotifications();
+      if (!ln) return;
+
+      try {
+        const perm = await ln.requestPermissions();
+        if (perm && perm.display !== 'granted') return;
+      } catch (_) {
+        return;
+      }
+
+      await cancelarNotificacoesNativas();
+
+      const alertas = calcularProximosAlertas(50);
+      const idBase = 1000;
+      // allowWhileIdle: false — em Doze o allowWhileIdle só deixa 1 alerta a cada 9 min,
+      // o que quebra intervalos curtos de corrida. Com SCHEDULE_EXACT_ALARM, setExact
+      // dispara no horário enquanto o aparelho não está em deep-doze (ex.: durante o treino).
+      const notifications = alertas
+        .filter((a) => a.at > Date.now() + 250)
+        .map((a, i) => ({
+          id: idBase + i,
+          title: a.nomeProx,
+          body: `Trocando de etapa: ${a.nomeAtual} → ${a.nomeProx}`,
+          schedule: { at: new Date(a.at), allowWhileIdle: false },
+          sound: 'default',
+          smallIcon: 'ic_notification',
+          extra: { etapa: a.nomeProx },
+        }));
+
+      if (notifications.length === 0) return;
+
+      try {
+        await ln.schedule({ notifications });
+        notifIds = notifications.map((n) => n.id);
+      } catch (_) { /* ignora */ }
+    }
+
+    const display = document.getElementById('display');
+    const statusText = document.getElementById('status');
+    const stepsContainer = document.getElementById('stepsList');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnPause = document.getElementById('btnPause');
+    const btnAdd = document.getElementById('btnAdd');
+
+    // ---------- Persistência ----------
+    function salvarEtapas() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(
+          etapas.map(({ id, nome, min, seg }) => ({ id, nome, min, seg }))
+        ));
+      } catch (_) { /* storage indisponível */ }
+    }
+
+    function carregarEtapas() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (Array.isArray(data) && data.length > 0) return data;
+      } catch (_) { /* ignora */ }
+      return null;
+    }
+
+    // ---------- Áudio (sem arquivos externos — funciona offline) ----------
+    let audioCtx = null;
+
+    function unlockAudio() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      } catch (_) { /* sem áudio */ }
+    }
+
+    function beep(ctx, freq, startTime, duration, gain = 0.18) {
+      const osc = ctx.createOscillator();
+      const amp = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      amp.gain.setValueAtTime(0.0001, startTime);
+      amp.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+      amp.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      osc.connect(amp);
+      amp.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.05);
+    }
+
+    function tocarAlertaTransicao() {
+      if (!audioCtx) return;
+      try {
+        const t = audioCtx.currentTime + 0.02;
+        // 3 bipes: curto, curto, longo — combina com a vibração
+        beep(audioCtx, 880, t, 0.16, 0.2);
+        beep(audioCtx, 880, t + 0.25, 0.16, 0.2);
+        beep(audioCtx, 1174.66, t + 0.5, 0.45, 0.22);
+      } catch (_) { /* ignora */ }
+    }
+
+    function tocarBeepInicio() {
+      if (!audioCtx) return;
+      try {
+        beep(audioCtx, 660, audioCtx.currentTime + 0.02, 0.12, 0.15);
+      } catch (_) { /* ignora */ }
+    }
+
+    // ---------- Vibração ----------
+    function vibrar3Segundos() {
+      if ('vibrate' in navigator) {
+        // vibra 800ms, pausa 200ms, vibra 800ms, pausa 200ms, vibra 1000ms (~3s)
+        navigator.vibrate([800, 200, 800, 200, 1000]);
+      }
+    }
+
+    function vibrarRestante(ms) {
+      if ('vibrate' in navigator && ms > 0) {
+        navigator.vibrate(Math.min(ms, TRANSICAO_MS));
+      }
+    }
+
+    function cancelarVibracao() {
+      if ('vibrate' in navigator) navigator.vibrate(0);
+    }
+
+    // ---------- Wake Lock (mantém a tela ligada durante o treino) ----------
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      if (!('wakeLock' in navigator)) return;
+      try {
+        if (wakeLock && !wakeLock.released) return;
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } catch (_) { /* permissão negada / não suportado */ }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock && !wakeLock.released) {
+        wakeLock.release().catch(() => {});
+      }
+      wakeLock = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      // Ao voltar ao primeiro plano: re-sincroniza o display e reativa o wake lock
+      if (rodando) {
+        atualizar();
+        requestWakeLock();
+        nativoKeepAwake(true);
+        // Reagenda o restante do treino (catch-up pode ter pulado etapas)
+        agendarNotificacoesNativas();
+      }
+    });
+
+    // ---------- Render ----------
+    function renderizarEtapas() {
+      stepsContainer.innerHTML = '';
+      etapas.forEach((etapa, idx) => {
+        const div = document.createElement('div');
+        div.className = `step-item ${rodando && idx === indiceAtual ? 'active' : ''}`;
+        div.innerHTML = `
+          <input type="text" value="${etapa.nome}" ${rodando ? 'disabled' : ''} onchange="atualizarNome(${idx}, this.value)">
+          <div class="step-time-inputs">
+            <input type="number" min="0" max="99" value="${etapa.min}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'min', this.value)">m
+            <input type="number" min="0" max="59" value="${etapa.seg}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'seg', this.value)">s
+          </div>
+          ${etapas.length > 1 && !rodando ? `<button class="btn-remove" onclick="removerEtapa(${idx})">&times;</button>` : ''}
+        `;
+        stepsContainer.appendChild(div);
+      });
+    }
+
+    function atualizarNome(index, val) {
+      etapas[index].nome = val || `Etapa ${index + 1}`;
+      salvarEtapas();
+    }
+
+    function atualizarTempo(index, tipo, val) {
+      const num = parseInt(val, 10);
+      etapas[index][tipo] = Number.isFinite(num) && num >= 0 ? num : 0;
+      salvarEtapas();
+      // Atualiza o display se a etapa editada for a exibida, sem pular para a etapa 0
+      if (!rodando && !emTransicao && index === indiceAtual) {
+        const e = etapas[indiceAtual];
+        const durMs = duracaoEtapaMs(e);
+        pausedRestanteMs = durMs;
+        deadline = null;
+        display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+      }
+    }
+
+    function adicionarEtapa() {
+      etapas.push({
+        id: Date.now(),
+        nome: `Etapa ${etapas.length + 1}`,
+        min: 1,
+        seg: 0
+      });
+      salvarEtapas();
+      renderizarEtapas();
+    }
+
+    function removerEtapa(index) {
+      if (etapas.length <= 1) return;
+      etapas.splice(index, 1);
+      if (indiceAtual >= etapas.length) indiceAtual = 0;
+      salvarEtapas();
+      renderizarEtapas();
+      resetarDisplay();
+    }
+
+    function formatarTempo(segundos) {
+      const total = Math.max(0, Math.floor(segundos));
+      const min = Math.floor(total / 60).toString().padStart(2, '0');
+      const seg = (total % 60).toString().padStart(2, '0');
+      return `${min}:${seg}`;
+    }
+
+    function duracaoEtapaMs(etapa) {
+      return ((etapa.min * 60) + etapa.seg) * 1000;
+    }
+
+    // ---------- Lógica do timer ----------
+    function carregarEtapaAtual() {
+      const etapa = etapas[indiceAtual];
+      const durMs = duracaoEtapaMs(etapa);
+      deadline = Date.now() + durMs;
+      pausedRestanteMs = durMs;
+      statusText.textContent = etapa.nome;
+      display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+      renderizarEtapas();
+    }
+
+    function iniciarTransicao() {
+      emTransicao = true;
+      deadline = Date.now() + TRANSICAO_MS;
+      pausedRestanteMs = TRANSICAO_MS;
+      display.textContent = formatarTempo(Math.ceil(TRANSICAO_MS / 1000));
+      statusText.textContent = 'Trocando de etapa...';
+      renderizarEtapas();
+      vibrar3Segundos();
+      tocarAlertaTransicao();
+    }
+
+    function finalizarTransicao() {
+      if (!rodando) return;
+      indiceAtual = (indiceAtual + 1) % etapas.length;
+      emTransicao = false;
+      carregarEtapaAtual();
+    }
+
+    function atualizar() {
+      if (!rodando || deadline == null) return;
+
+      let restanteMs = deadline - Date.now();
+
+      if (restanteMs > 0) {
+        display.textContent = formatarTempo(Math.ceil(restanteMs / 1000));
+        return;
+      }
+
+      const atrasoMs = -restanteMs;
+
+      // Atraso pequeno: troca normal (com vibração e som)
+      if (atrasoMs < 500) {
+        if (emTransicao) {
+          finalizarTransicao();
+        } else {
+          iniciarTransicao();
+        }
+        return;
+      }
+
+      // Atraso grande (app em background / timers limitados):
+      // sincroniza com o relógio de parede, pulando etapas completas sem "encenar" cada troca.
+      let guard = 0;
+      while (restanteMs <= 0 && guard++ < 500) {
+        if (emTransicao) {
+          indiceAtual = (indiceAtual + 1) % etapas.length;
+          emTransicao = false;
+          deadline = deadline + duracaoEtapaMs(etapas[indiceAtual]);
+        } else {
+          emTransicao = true;
+          deadline = deadline + TRANSICAO_MS;
+        }
+        restanteMs = deadline - Date.now();
+      }
+
+      pausedRestanteMs = Math.max(0, restanteMs);
+      if (emTransicao) {
+        statusText.textContent = 'Trocando de etapa...';
+        display.textContent = formatarTempo(Math.ceil(Math.max(0, restanteMs) / 1000));
+      } else {
+        // Avisa que a etapa mudou enquanto o app estava em segundo plano
+        statusText.textContent = etapas[indiceAtual].nome;
+        display.textContent = formatarTempo(Math.ceil(Math.max(0, restanteMs) / 1000));
+        renderizarEtapas();
+        if (atrasoMs > TRANSICAO_MS) {
+          tocarAlertaTransicao();
+          vibrar3Segundos();
+        }
+      }
+    }
+
+    function iniciar() {
+      if (rodando || etapas.length === 0) return;
+
+      unlockAudio();
+      tocarBeepInicio();
+
+      rodando = true;
+      btnPlay.disabled = true;
+      btnPause.disabled = false;
+      btnAdd.disabled = true;
+
+      if (emTransicao) {
+        // Continua a transição de onde parou (ex.: pausou nos 3s de vibração)
+        deadline = Date.now() + Math.max(0, pausedRestanteMs ?? 0);
+        vibrarRestante(pausedRestanteMs ?? 0);
+      } else if (pausedRestanteMs != null) {
+        // Retoma a etapa pausada (inclusive se sobraram 0ms — cai direto na troca)
+        deadline = Date.now() + Math.max(0, pausedRestanteMs);
+      } else {
+        // Início do treino do zero
+        indiceAtual = 0;
+        emTransicao = false;
+        carregarEtapaAtual();
+      }
+
+      renderizarEtapas();
+      requestWakeLock();
+      nativoKeepAwake(true);
+      iniciarKeepAliveAudio();
+      agendarNotificacoesNativas();
+      atualizar();
+    }
+
+    function pausar() {
+      if (!rodando) return;
+
+      if (deadline != null) {
+        pausedRestanteMs = Math.max(0, deadline - Date.now());
+      }
+      rodando = false;
+      // emTransicao é preservado: ao retomar, a transição continua em vez de reiniciar
+      cancelarVibracao();
+      releaseWakeLock();
+      nativoKeepAwake(false);
+      pararKeepAliveAudio();
+      cancelarNotificacoesNativas();
+
+      btnPlay.disabled = false;
+      btnPause.disabled = true;
+      btnAdd.disabled = false;
+
+      const nome = etapas[indiceAtual].nome;
+      statusText.textContent = emTransicao
+        ? `Trocando de etapa... (Pausado)`
+        : `${nome} (Pausado)`;
+      renderizarEtapas();
+    }
+
+    function resetarDisplay() {
+      if (rodando) return;
+      indiceAtual = 0;
+      emTransicao = false;
+      const e = etapas[0];
+      const durMs = duracaoEtapaMs(e);
+      pausedRestanteMs = durMs;
+      deadline = null;
+      statusText.textContent = e.nome;
+      display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+    }
+
+    btnPlay.addEventListener('click', iniciar);
+    btnPause.addEventListener('click', pausar);
+    btnAdd.addEventListener('click', adicionarEtapa);
+
+    // Loop de UI: calcula sempre a partir de Date.now() (imune a drift)
+    setInterval(() => {
+      if (rodando) atualizar();
+    }, 250);
+
+    // Inicialização
+    renderizarEtapas();
+    resetarDisplay();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>

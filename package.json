@@ -1,0 +1,21 @@
+{
+  "name": "temporizador-ciclico",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Temporizador automático para treinos de corrida",
+  "scripts": {
+    "sync": "cap sync android",
+    "android": "cap open android",
+    "prepare:android": "node scripts/prepare-android.mjs",
+    "build:apk": "npm run sync && npm run prepare:android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/local-notifications": "^6.0.3",
+    "@capacitor/haptics": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

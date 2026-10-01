@@ -1,0 +1,16 @@
+{
+  "appId": "com.temporizadorciclico.app",
+  "appName": "Timer Cíclico",
+  "webDir": "www",
+  "backgroundColor": "#0f172a",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_notification",
+      "iconColor": "#4F46E5",
+      "sound": "default"
+    }
+  }
+}
