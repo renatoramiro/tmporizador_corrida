@@ -19,6 +19,14 @@ public class AlertReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
 
+        // Treino encerrado (prefs limpas): ignora alarme órfão em vez de reanimar o service.
+        try {
+            android.content.SharedPreferences p =
+                context.getSharedPreferences("timer_native", android.content.Context.MODE_PRIVATE);
+            if (!p.contains("stages")) return;
+        } catch (Exception ignored) {
+        }
+
         String title = intent.getStringExtra(EXTRA_TITLE);
         String body = intent.getStringExtra(EXTRA_BODY);
         if (title == null) title = "Trocando de etapa";

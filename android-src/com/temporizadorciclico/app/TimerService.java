@@ -82,7 +82,7 @@ public class TimerService extends Service {
                 handler.post(tick);
             }
             startAsForeground("Trocando de etapa...");
-            return START_STICKY;
+            return START_NOT_STICKY;
         }
 
         // START
@@ -107,7 +107,9 @@ public class TimerService extends Service {
         handler.post(tick);
         startAsForeground(statusTitle());
         scheduleNativeAlarms();
-        return START_STICKY;
+        // NOT_STICKY: o sistema não deve reanimar o service sozinho.
+        // Continuidade do treino (tela bloqueada) fica por conta do AlarmManager + prefs.
+        return START_NOT_STICKY;
     }
 
     private void startAsForeground(String text) {
@@ -196,12 +198,75 @@ public class TimerService extends Service {
         handler.removeCallbacks(tick);
         AlarmScheduler.cancel(this);
         try {
+            AlarmAlert.stop();
+        } catch (Exception ignored) {
+        }
+        try {
             stopForeground(true);
         } catch (Exception ignored) {
         }
+        cancelAllNotifications();
         SharedPreferences.Editor ed = getSharedPreferences(PREFS, MODE_PRIVATE).edit();
         ed.clear();
         ed.apply();
+    }
+
+    private void cancelAllNotifications() {
+        try {
+            android.app.NotificationManager nm =
+                (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            // IDs usados pelo service + pelo plugin LocalNotifications (fallback JS)
+            for (int id = 1; id < 1100; id++) {
+                nm.cancel(id);
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
+    /**
+     * Usuário fechou o app (swipe em Recentes). Encerra o treino por completo:
+     * service, alarmes e notificações — nada fica rodando em background.
+     */
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        try {
+            stopWork();
+        } catch (Exception ignored) {
+        }
+        try {
+            stopSelf();
+        } catch (Exception ignored) {
+        }
+        super.onTaskRemoved(rootIntent);
+    }
+
+    /** Para o service e tudo que ele agendou. Usado pela Activity ao fechar. */
+    public static void stopAll(Context ctx) {
+        try {
+            Intent i = new Intent(ctx, TimerService.class);
+            i.setAction(ACTION_STOP);
+            ctx.startService(i);
+        } catch (Exception ignored) {
+        }
+        try {
+            AlarmScheduler.cancel(ctx);
+        } catch (Exception ignored) {
+        }
+        try {
+            AlarmAlert.stop();
+        } catch (Exception ignored) {
+        }
+        try {
+            android.app.NotificationManager nm =
+                (android.app.NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+            if (nm != null) {
+                for (int id = 1; id < 1100; id++) {
+                    nm.cancel(id);
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private long remainingMs() {

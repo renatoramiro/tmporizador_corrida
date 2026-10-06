@@ -902,6 +902,15 @@
       }
     });
 
+    // Fechou o app (WebView destruída): encerra o timer nativo por completo.
+    // Ir para home / bloquear tela não dispara pagehide — o treino continua.
+    window.addEventListener('pagehide', () => {
+      try {
+        nativoStop();
+        cancelarNotificacoesNativas();
+      } catch (_) { /* ignora */ }
+    });
+
     // ---------- Render ----------
     function escapeAttr(val) {
       return String(val ?? '')
@@ -940,7 +949,6 @@
           <label class="toggle" title="${ativo ? 'Etapa no ciclo' : 'Etapa fora do ciclo'}">
             <input type="checkbox"
               ${ativo ? 'checked' : ''}
-              ${rodando ? 'disabled' : ''}
               onchange="toggleEtapa(${idx}, this.checked)">
             <span class="slider"></span>
           </label>
@@ -972,13 +980,41 @@
     function toggleEtapa(index, checked) {
       if (!etapas[index]) return;
       etapas[index].ativo = !!checked;
+      salvarEtapas();
 
-      // Se a etapa atual saiu do ciclo, pula para a próxima ativa
-      if (!rodando && !etapaAtiva(etapas[indiceAtual])) {
-        indiceAtual = primeiroIndiceAtivo();
+      // Nada mais no ciclo: encerra o treino se estiver rodando
+      if (totalAtivas() === 0) {
+        if (rodando) {
+          pausar();
+        }
+        indiceAtual = 0;
+        emTransicao = false;
+        pausedRestanteMs = 0;
+        deadline = null;
+        faseTotalMs = 1;
+        statusText.textContent = 'Nenhuma etapa ativa';
+        statusText.className = 'status idle';
+        display.textContent = '00:00';
+        atualizarProgresso(0, 1);
+        renderizarEtapas();
+        return;
       }
 
-      salvarEtapas();
+      // Etapa atual saiu do ciclo → pula para a próxima ativa
+      if (!etapaAtiva(etapas[indiceAtual])) {
+        const prox = proximoIndiceAtivo(indiceAtual);
+        indiceAtual = etapaAtiva(etapas[prox]) ? prox : primeiroIndiceAtivo();
+        emTransicao = false;
+
+        if (rodando) {
+          // Pula direto para a próxima etapa ativa (sem espera de transição)
+          carregarEtapaAtual();
+          agendarNotificacoesNativas();
+          renderizarEtapas();
+          return;
+        }
+      }
+
       renderizarEtapas();
 
       if (!rodando) {
@@ -992,12 +1028,10 @@
           statusText.className = 'status';
           display.textContent = formatarTempo(Math.ceil(durMs / 1000));
           atualizarProgresso(durMs, durMs);
-        } else if (totalAtivas() === 0) {
-          statusText.textContent = 'Nenhuma etapa ativa';
-          statusText.className = 'status idle';
-          display.textContent = '00:00';
-          atualizarProgresso(0, 1);
         }
+      } else {
+        // Ciclo mudou com o timer ativo: reagenda alarmes/notificações nativos
+        agendarNotificacoesNativas();
       }
     }
 

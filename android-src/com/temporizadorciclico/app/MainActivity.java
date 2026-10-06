@@ -34,4 +34,21 @@ public class MainActivity extends BridgeActivity {
             Log.e(TAG, "Falha ao registrar TimerAndroid bridge", t);
         }
     }
+
+    /**
+     * Ao fechar de verdade (back / swipe em Recentes), encerra o TimerService.
+     * Ir para home ou bloquear a tela NÃO passa por aqui — o treino continua.
+     */
+    @Override
+    public void onDestroy() {
+        if (isFinishing()) {
+            try {
+                TimerService.stopAll(this);
+                Log.i(TAG, "Activity finalizando — timer interrompido");
+            } catch (Throwable t) {
+                Log.e(TAG, "Falha ao parar timer no onDestroy", t);
+            }
+        }
+        super.onDestroy();
+    }
 }
