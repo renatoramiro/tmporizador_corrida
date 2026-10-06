@@ -7,152 +7,470 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#4F46E5">
+  <meta name="theme-color" content="#0B1220">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Timer">
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-    body {
-      background-color: #0f172a;
-      color: #f8fafc;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      min-height: 100dvh;
+    :root {
+      --bg: #0B1220;
+      --bg-elevated: #121A2B;
+      --bg-input: #0E1626;
+      --border: rgba(148, 163, 184, 0.16);
+      --border-strong: rgba(148, 163, 184, 0.28);
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --text-faint: #64748B;
+      --primary: #6366F1;
+      --primary-soft: rgba(99, 102, 241, 0.18);
+      --accent: #22D3EE;
+      --accent-soft: rgba(34, 211, 238, 0.16);
+      --success: #34D399;
+      --success-soft: rgba(52, 211, 153, 0.16);
+      --danger: #F87171;
+      --danger-soft: rgba(248, 113, 113, 0.14);
+      --warning: #FBBF24;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
       margin: 0;
-      padding: 20px;
+      min-height: 100%;
     }
-    .card {
-      background: #1e293b;
-      padding: 1.5rem;
-      border-radius: 1rem;
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, 0.18), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(34, 211, 238, 0.10), transparent 45%),
+        var(--bg);
+      display: flex;
+      justify-content: center;
+      padding: 22px 16px 32px;
+    }
+
+    .app {
       width: 100%;
-      max-width: 400px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center;
+      max-width: 440px;
     }
-    h2 { margin-top: 0; color: #94a3b8; font-size: 1.2rem; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 4px 4px 16px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #6366F1, #22D3EE);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: 0 10px 24px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent 40%), var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
 
     .timer-display-box {
-      background: #0f172a;
-      padding: 1rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      border: 1px solid #334155;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.9));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 16px 14px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
     }
+
+    .timer-display-box::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.7;
+    }
+
     .status {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #38bdf8;
-      min-height: 1.5rem;
-      margin-bottom: 0.25rem;
+      font-size: 0.95rem;
+      font-weight: 650;
+      color: var(--accent);
+      min-height: 1.35rem;
+      margin-bottom: 0.15rem;
+      letter-spacing: 0.01em;
     }
+
+    .status.paused { color: var(--warning); }
+    .status.idle { color: var(--text-muted); }
+
     .display {
-      font-size: 3.5rem;
+      font-size: clamp(3.2rem, 12vw, 4.1rem);
       font-weight: 800;
-      font-family: monospace;
-      color: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--text);
       font-variant-numeric: tabular-nums;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
     }
 
-    .controls { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    .progress-track {
+      margin-top: 14px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.15);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #22D3EE, #6366F1);
+      transition: width 0.25s linear;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
     button {
-      flex: 1;
-      padding: 12px;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: bold;
+      border-radius: 14px;
+      font-size: 0.98rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: transform 0.12s ease, opacity 0.2s ease, background 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn-start { background: #22c55e; color: #fff; }
-    .btn-stop { background: #ef4444; color: #fff; }
-    .btn-add { background: #4f46e5; color: #fff; padding: 8px 12px; margin-bottom: 1rem; width: 100%; }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* Lista de Etapas */
+    button:active:not(:disabled) { transform: scale(0.97); }
+    button:disabled { opacity: 0.42; cursor: not-allowed; }
+
+    .btn-start,
+    .btn-stop {
+      flex: 1;
+      padding: 14px 12px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #22C55E, #16A34A);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(34, 197, 94, 0.28);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #EF4444, #DC2626);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(239, 68, 68, 0.24);
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      background: var(--primary-soft);
+      color: #C7D2FE;
+      border: 1px dashed rgba(129, 140, 248, 0.45);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 2px 2px 10px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 650;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid rgba(34, 211, 238, 0.22);
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
     .steps-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-height: 250px;
+      max-height: 320px;
       overflow-y: auto;
       text-align: left;
+      padding-right: 2px;
     }
+
     .step-item {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
-      gap: 8px;
-      background: #0f172a;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
+      gap: 10px;
+      background: var(--bg-input);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      transition: border-color 0.2s ease, opacity 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
+
     .step-item.active {
-      border-color: #38bdf8;
-      background: #1e293b;
+      border-color: rgba(34, 211, 238, 0.55);
+      background: linear-gradient(180deg, rgba(34, 211, 238, 0.10), rgba(34, 211, 238, 0.03));
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12), 0 10px 24px rgba(34, 211, 238, 0.08);
     }
+
+    .step-item.inactive {
+      opacity: 0.48;
+    }
+
+    .step-main {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+
     .step-item input[type="text"] {
-      flex: 1;
+      width: 100%;
       background: transparent;
       border: none;
-      color: #fff;
+      color: var(--text);
       font-size: 0.95rem;
-      font-weight: 600;
+      font-weight: 650;
       outline: none;
-      width: 80px;
+      padding: 0;
     }
+
+    .step-item input[type="text"]:disabled {
+      color: var(--text-muted);
+    }
+
     .step-time-inputs {
       display: flex;
       align-items: center;
-      gap: 2px;
-      color: #64748b;
-      font-size: 0.8rem;
+      gap: 6px;
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      font-weight: 600;
     }
+
     .step-time-inputs input[type="number"] {
-      width: 42px;
-      padding: 4px;
-      border-radius: 4px;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #fff;
+      width: 52px;
+      padding: 7px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--text);
       text-align: center;
+      font-size: 0.88rem;
+      font-weight: 650;
+      outline: none;
     }
+
+    .step-time-inputs input[type="number"]:focus {
+      border-color: rgba(99, 102, 241, 0.65);
+    }
+
+    .step-time-inputs input[type="number"]:disabled {
+      opacity: 0.55;
+    }
+
     .btn-remove {
-      background: transparent;
-      color: #ef4444;
-      border: none;
-      font-size: 1.2rem;
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .step-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Toggle switch */
+    .toggle {
+      position: relative;
+      display: inline-flex;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 auto;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      margin: 0;
       cursor: pointer;
-      padding: 0 4px;
-      flex: 0;
+      z-index: 1;
+    }
+
+    .toggle input:focus-visible + .slider {
+      outline: 2px solid #818CF8;
+      outline-offset: 2px;
+    }
+
+    .toggle .slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background: rgba(148, 163, 184, 0.28);
+      border-radius: 999px;
+      transition: background 0.2s ease;
+    }
+
+    .toggle .slider::before {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.18s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    .toggle input:checked + .slider {
+      background: linear-gradient(135deg, #22D3EE, #6366F1);
+    }
+
+    .toggle input:checked + .slider::before {
+      transform: translateX(18px);
+    }
+
+    .toggle input:disabled + .slider {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .hint {
+      margin: 12px 2px 0;
+      color: var(--text-faint);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .empty {
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 18px 12px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .warn-banner {
+      display: none;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.28);
+      color: #FDE68A;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .warn-banner.show { display: block; }
+
+    /* Scrollbar discreta */
+    .steps-list::-webkit-scrollbar { width: 6px; }
+    .steps-list::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.28);
+      border-radius: 999px;
     }
   </style>
 </head>
 <body>
+  <div class="app">
+    <header class="brand">
+      <div class="brand-mark">TC</div>
+      <div>
+        <h1>Timer Cíclico</h1>
+        <p>Treino por intervalos com etapas selecionáveis</p>
+      </div>
+    </header>
 
-  <div class="card">
-    <h2>Timer Cíclico</h2>
+    <div class="card">
+      <div id="warnBanner" class="warn-banner">Ative ao menos uma etapa para iniciar o treino.</div>
 
-    <div class="timer-display-box">
-      <div id="status" class="status">Pronto</div>
-      <div id="display" class="display">00:00</div>
-    </div>
+      <div class="timer-display-box">
+        <div id="status" class="status idle">Pronto</div>
+        <div id="display" class="display">00:00</div>
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
 
-    <div class="controls">
-      <button id="btnPlay" class="btn-start">Play</button>
-      <button id="btnPause" class="btn-stop" disabled>Pausar</button>
-    </div>
+      <div class="controls">
+        <button id="btnPlay" class="btn-start">Play</button>
+        <button id="btnPause" class="btn-stop" disabled>Pausar</button>
+      </div>
 
-    <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
+      <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
 
-    <div id="stepsList" class="steps-list">
-      <!-- Etapas geradas via JavaScript -->
+      <div class="section-head">
+        <h2>Etapas do ciclo</h2>
+        <span id="activeBadge" class="badge">0 de 0 ativas</span>
+      </div>
+
+      <div id="stepsList" class="steps-list">
+        <!-- Etapas geradas via JavaScript -->
+      </div>
+
+      <p class="hint">
+        Use o switch para incluir ou remover uma etapa do ciclo em tempo de execução.
+        Etapas desativadas ficam salvas e podem ser reativadas quando quiser.
+      </p>
     </div>
   </div>
 
@@ -163,16 +481,28 @@
     const TRANSICAO_MS = 5000;
     const STORAGE_KEY = 'timer-ciclico-etapas';
 
-    let etapas = carregarEtapas() || [
-      { id: Date.now(), nome: "Caminhada", min: 2, seg: 0 },
-      { id: Date.now() + 1, nome: "Corrida", min: 1, seg: 30 }
-    ];
+    function normalizarEtapa(e, fallbackIndex) {
+      return {
+        id: e.id ?? Date.now() + fallbackIndex,
+        nome: e.nome || `Etapa ${fallbackIndex + 1}`,
+        min: Number.isFinite(e.min) ? e.min : 1,
+        seg: Number.isFinite(e.seg) ? e.seg : 0,
+        // Etapas antigas (sem o campo) nascem ativas
+        ativo: e.ativo !== false,
+      };
+    }
+
+    let etapas = (carregarEtapas() || [
+      { id: Date.now(), nome: "Caminhada", min: 2, seg: 0, ativo: true },
+      { id: Date.now() + 1, nome: "Corrida", min: 1, seg: 30, ativo: true },
+    ]).map(normalizarEtapa);
 
     let indiceAtual = 0;
     let rodando = false;
     let emTransicao = false;
     let deadline = null;          // Date.now() quando a fase atual (etapa ou transição) termina
     let pausedRestanteMs = null;  // tempo restante ao pausar; null = não iniciado / reiniciar do zero
+    let faseTotalMs = 0;          // duração total da fase atual (para a barra de progresso)
     let notifIds = [];            // ids das notificações nativas agendadas (Capacitor)
 
     // ---------- Capacitor (app Android) ----------
@@ -268,12 +598,56 @@
       else releaseWakeLock();
     }
 
+    // ---------- Etapas ativas (seleção em tempo de execução) ----------
+    function etapaAtiva(etapa) {
+      return !!etapa && etapa.ativo !== false;
+    }
+
+    function etapasAtivas() {
+      return etapas.filter(etapaAtiva);
+    }
+
+    function totalAtivas() {
+      return etapas.reduce((n, e) => n + (etapaAtiva(e) ? 1 : 0), 0);
+    }
+
+    function primeiroIndiceAtivo() {
+      const i = etapas.findIndex(etapaAtiva);
+      return i >= 0 ? i : 0;
+    }
+
+    /** Próxima etapa ativa a partir de `from` (inclusive de volta a `from` se for a única). */
+    function proximoIndiceAtivo(from) {
+      if (etapas.length === 0) return 0;
+      for (let i = 1; i <= etapas.length; i++) {
+        const idx = (from + i) % etapas.length;
+        if (etapaAtiva(etapas[idx])) return idx;
+      }
+      return from;
+    }
+
+    /** Posição da etapa `idx` dentro da lista compacta de ativas (para o serviço nativo). */
+    function posicaoNaListaAtiva(idx) {
+      let pos = 0;
+      for (let i = 0; i < idx && i < etapas.length; i++) {
+        if (etapaAtiva(etapas[i])) pos++;
+      }
+      return pos;
+    }
+
+    function stagesJsonAtivas() {
+      return JSON.stringify(
+        etapasAtivas().map((e) => ({ nome: e.nome, min: e.min, seg: e.seg }))
+      );
+    }
+
     /** Percorre a frente do treino e lista os instantes de fim de etapa (quando o alerta deve soar). */
     function calcularProximosAlertas(max = 50) {
+      const ativas = etapasAtivas();
       const alertas = [];
-      if (etapas.length === 0) return alertas;
+      if (ativas.length === 0) return alertas;
 
-      let idx = indiceAtual;
+      let idx = etapaAtiva(etapas[indiceAtual]) ? posicaoNaListaAtiva(indiceAtual) : 0;
       let emTrans = emTransicao;
       let faseFim = deadline != null
         ? deadline
@@ -282,18 +656,18 @@
       // Se já estamos em transição, o alerta do fim da etapa anterior já saiu;
       // avança para o fim da próxima etapa.
       if (emTrans) {
-        idx = (idx + 1) % etapas.length;
+        idx = (idx + 1) % ativas.length;
         emTrans = false;
-        faseFim = faseFim + duracaoEtapaMs(etapas[idx]);
+        faseFim = faseFim + duracaoEtapaMs(ativas[idx]);
       }
 
       for (let i = 0; i < max; i++) {
-        const nomeAtual = etapas[idx].nome;
-        const nomeProx = etapas[(idx + 1) % etapas.length].nome;
+        const nomeAtual = ativas[idx].nome;
+        const nomeProx = ativas[(idx + 1) % ativas.length].nome;
         alertas.push({ at: faseFim, nomeAtual, nomeProx });
         // após o alerta: transição + próxima etapa
-        faseFim = faseFim + TRANSICAO_MS + duracaoEtapaMs(etapas[(idx + 1) % etapas.length]);
-        idx = (idx + 1) % etapas.length;
+        faseFim = faseFim + TRANSICAO_MS + duracaoEtapaMs(ativas[(idx + 1) % ativas.length]);
+        idx = (idx + 1) % ativas.length;
       }
       return alertas;
     }
@@ -341,11 +715,15 @@
       if (!deadline && pausedRestanteMs != null) {
         deadline = Date.now() + Math.max(0, pausedRestanteMs);
       }
-      if (deadline) {
-        const stagesJson = JSON.stringify(etapas.map((e) => ({ nome: e.nome, min: e.min, seg: e.seg })));
+      if (deadline && totalAtivas() > 0) {
+        // O serviço nativo recebe APENAS as etapas ativas (lista compacta).
+        const stagesJson = stagesJsonAtivas();
+        const compactIndex = etapaAtiva(etapas[indiceAtual])
+          ? posicaoNaListaAtiva(indiceAtual)
+          : 0;
         await nativoStart(
           stagesJson,
-          indiceAtual,
+          compactIndex,
           deadline,
           !!emTransicao,
           TRANSICAO_MS
@@ -404,12 +782,15 @@
     const btnPlay = document.getElementById('btnPlay');
     const btnPause = document.getElementById('btnPause');
     const btnAdd = document.getElementById('btnAdd');
+    const progressFill = document.getElementById('progressFill');
+    const activeBadge = document.getElementById('activeBadge');
+    const warnBanner = document.getElementById('warnBanner');
 
     // ---------- Persistência ----------
     function salvarEtapas() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(
-          etapas.map(({ id, nome, min, seg }) => ({ id, nome, min, seg }))
+          etapas.map(({ id, nome, min, seg, ativo }) => ({ id, nome, min, seg, ativo: ativo !== false }))
         ));
       } catch (_) { /* storage indisponível */ }
     }
@@ -522,21 +903,102 @@
     });
 
     // ---------- Render ----------
+    function escapeAttr(val) {
+      return String(val ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function atualizarResumo() {
+      const total = etapas.length;
+      const ativas = totalAtivas();
+      activeBadge.textContent = `${ativas} de ${total} ativas`;
+      const nenhuma = ativas === 0;
+      warnBanner.classList.toggle('show', nenhuma && !rodando);
+      if (!rodando) {
+        btnPlay.disabled = nenhuma;
+      }
+    }
+
     function renderizarEtapas() {
       stepsContainer.innerHTML = '';
+
+      if (etapas.length === 0) {
+        stepsContainer.innerHTML = '<div class="empty">Nenhuma etapa. Adicione uma para começar.</div>';
+        atualizarResumo();
+        return;
+      }
+
       etapas.forEach((etapa, idx) => {
+        const ativo = etapaAtiva(etapa);
+        const isCurrent = idx === indiceAtual;
         const div = document.createElement('div');
-        div.className = `step-item ${rodando && idx === indiceAtual ? 'active' : ''}`;
+        div.className = `step-item${rodando && isCurrent ? ' active' : ''}${!ativo ? ' inactive' : ''}`;
         div.innerHTML = `
-          <input type="text" value="${etapa.nome}" ${rodando ? 'disabled' : ''} onchange="atualizarNome(${idx}, this.value)">
-          <div class="step-time-inputs">
-            <input type="number" min="0" max="99" value="${etapa.min}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'min', this.value)">m
-            <input type="number" min="0" max="59" value="${etapa.seg}" ${rodando ? 'disabled' : ''} onchange="atualizarTempo(${idx}, 'seg', this.value)">s
+          <label class="toggle" title="${ativo ? 'Etapa no ciclo' : 'Etapa fora do ciclo'}">
+            <input type="checkbox"
+              ${ativo ? 'checked' : ''}
+              ${rodando ? 'disabled' : ''}
+              onchange="toggleEtapa(${idx}, this.checked)">
+            <span class="slider"></span>
+          </label>
+          <div class="step-main">
+            <input type="text" value="${escapeAttr(etapa.nome)}"
+              ${rodando ? 'disabled' : ''}
+              onchange="atualizarNome(${idx}, this.value)">
+            <div class="step-time-inputs">
+              <input type="number" inputmode="numeric" min="0" max="99" value="${etapa.min}"
+                ${rodando ? 'disabled' : ''}
+                onchange="atualizarTempo(${idx}, 'min', this.value)">m
+              <input type="number" inputmode="numeric" min="0" max="59" value="${etapa.seg}"
+                ${rodando ? 'disabled' : ''}
+                onchange="atualizarTempo(${idx}, 'seg', this.value)">s
+            </div>
           </div>
-          ${etapas.length > 1 && !rodando ? `<button class="btn-remove" onclick="removerEtapa(${idx})">&times;</button>` : ''}
+          <div class="step-actions">
+            ${etapas.length > 1 && !rodando
+              ? `<button class="btn-remove" aria-label="Remover etapa" onclick="removerEtapa(${idx})">&times;</button>`
+              : ''}
+          </div>
         `;
         stepsContainer.appendChild(div);
       });
+
+      atualizarResumo();
+    }
+
+    function toggleEtapa(index, checked) {
+      if (!etapas[index]) return;
+      etapas[index].ativo = !!checked;
+
+      // Se a etapa atual saiu do ciclo, pula para a próxima ativa
+      if (!rodando && !etapaAtiva(etapas[indiceAtual])) {
+        indiceAtual = primeiroIndiceAtivo();
+      }
+
+      salvarEtapas();
+      renderizarEtapas();
+
+      if (!rodando) {
+        const e = etapas[indiceAtual];
+        if (etapaAtiva(e) && !emTransicao) {
+          const durMs = duracaoEtapaMs(e);
+          pausedRestanteMs = durMs;
+          deadline = null;
+          faseTotalMs = durMs;
+          statusText.textContent = e.nome;
+          statusText.className = 'status';
+          display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+          atualizarProgresso(durMs, durMs);
+        } else if (totalAtivas() === 0) {
+          statusText.textContent = 'Nenhuma etapa ativa';
+          statusText.className = 'status idle';
+          display.textContent = '00:00';
+          atualizarProgresso(0, 1);
+        }
+      }
     }
 
     function atualizarNome(index, val) {
@@ -554,7 +1016,9 @@
         const durMs = duracaoEtapaMs(e);
         pausedRestanteMs = durMs;
         deadline = null;
+        faseTotalMs = durMs;
         display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+        atualizarProgresso(durMs, durMs);
       }
     }
 
@@ -563,7 +1027,8 @@
         id: Date.now(),
         nome: `Etapa ${etapas.length + 1}`,
         min: 1,
-        seg: 0
+        seg: 0,
+        ativo: true,
       });
       salvarEtapas();
       renderizarEtapas();
@@ -572,7 +1037,9 @@
     function removerEtapa(index) {
       if (etapas.length <= 1) return;
       etapas.splice(index, 1);
-      if (indiceAtual >= etapas.length) indiceAtual = 0;
+      if (indiceAtual >= etapas.length || !etapaAtiva(etapas[indiceAtual])) {
+        indiceAtual = primeiroIndiceAtivo();
+      }
       salvarEtapas();
       renderizarEtapas();
       resetarDisplay();
@@ -589,14 +1056,24 @@
       return ((etapa.min * 60) + etapa.seg) * 1000;
     }
 
+    function atualizarProgresso(restanteMs, totalMs) {
+      const total = Math.max(1, totalMs || 1);
+      const restante = Math.max(0, Math.min(total, restanteMs));
+      const pct = (restante / total) * 100;
+      progressFill.style.width = `${pct}%`;
+    }
+
     // ---------- Lógica do timer ----------
     function carregarEtapaAtual() {
       const etapa = etapas[indiceAtual];
       const durMs = duracaoEtapaMs(etapa);
       deadline = Date.now() + durMs;
       pausedRestanteMs = durMs;
+      faseTotalMs = durMs;
       statusText.textContent = etapa.nome;
+      statusText.className = 'status';
       display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+      atualizarProgresso(durMs, durMs);
       renderizarEtapas();
     }
 
@@ -604,8 +1081,11 @@
       emTransicao = true;
       deadline = Date.now() + TRANSICAO_MS;
       pausedRestanteMs = TRANSICAO_MS;
+      faseTotalMs = TRANSICAO_MS;
       display.textContent = formatarTempo(Math.ceil(TRANSICAO_MS / 1000));
       statusText.textContent = 'Trocando de etapa...';
+      statusText.className = 'status';
+      atualizarProgresso(TRANSICAO_MS, TRANSICAO_MS);
       renderizarEtapas();
       // Um único alerta por troca: nativo se existir (som STREAM_ALARM + vibração);
       // senão vibração/áudio web.
@@ -625,7 +1105,7 @@
 
     function finalizarTransicao() {
       if (!rodando) return;
-      indiceAtual = (indiceAtual + 1) % etapas.length;
+      indiceAtual = proximoIndiceAtivo(indiceAtual);
       emTransicao = false;
       carregarEtapaAtual();
     }
@@ -637,6 +1117,7 @@
 
       if (restanteMs > 0) {
         display.textContent = formatarTempo(Math.ceil(restanteMs / 1000));
+        atualizarProgresso(restanteMs, faseTotalMs);
         return;
       }
 
@@ -657,12 +1138,14 @@
       let guard = 0;
       while (restanteMs <= 0 && guard++ < 500) {
         if (emTransicao) {
-          indiceAtual = (indiceAtual + 1) % etapas.length;
+          indiceAtual = proximoIndiceAtivo(indiceAtual);
           emTransicao = false;
           deadline = deadline + duracaoEtapaMs(etapas[indiceAtual]);
+          faseTotalMs = duracaoEtapaMs(etapas[indiceAtual]);
         } else {
           emTransicao = true;
           deadline = deadline + TRANSICAO_MS;
+          faseTotalMs = TRANSICAO_MS;
         }
         restanteMs = deadline - Date.now();
       }
@@ -670,11 +1153,15 @@
       pausedRestanteMs = Math.max(0, restanteMs);
       if (emTransicao) {
         statusText.textContent = 'Trocando de etapa...';
+        statusText.className = 'status';
         display.textContent = formatarTempo(Math.ceil(Math.max(0, restanteMs) / 1000));
+        atualizarProgresso(restanteMs, faseTotalMs);
       } else {
         // Avisa que a etapa mudou enquanto o app estava em segundo plano
         statusText.textContent = etapas[indiceAtual].nome;
+        statusText.className = 'status';
         display.textContent = formatarTempo(Math.ceil(Math.max(0, restanteMs) / 1000));
+        atualizarProgresso(restanteMs, faseTotalMs);
         renderizarEtapas();
         if (atrasoMs > TRANSICAO_MS) {
           tocarAlertaTransicao();
@@ -684,7 +1171,14 @@
     }
 
     async function iniciar() {
-      if (rodando || etapas.length === 0) return;
+      if (rodando) return;
+      if (totalAtivas() === 0) {
+        statusText.textContent = 'Ative ao menos uma etapa';
+        statusText.className = 'status paused';
+        warnBanner.classList.add('show');
+        return;
+      }
+      if (etapas.length === 0) return;
 
       unlockAudio();
       tocarBeepInicio();
@@ -702,13 +1196,14 @@
       if (emTransicao) {
         // Continua a transição de onde parou (ex.: pausou durante a vibração)
         deadline = Date.now() + Math.max(0, pausedRestanteMs ?? 0);
+        faseTotalMs = faseTotalMs || TRANSICAO_MS;
         vibrarRestante(pausedRestanteMs ?? 0);
       } else if (pausedRestanteMs != null) {
         // Retoma a etapa pausada (inclusive se sobraram 0ms — cai direto na troca)
         deadline = Date.now() + Math.max(0, pausedRestanteMs);
       } else {
-        // Início do treino do zero
-        indiceAtual = 0;
+        // Início do treino do zero — começa na primeira etapa ativa
+        indiceAtual = primeiroIndiceAtivo();
         emTransicao = false;
         carregarEtapaAtual();
       }
@@ -735,27 +1230,44 @@
       pararKeepAliveAudio();
       cancelarNotificacoesNativas();
 
-      btnPlay.disabled = false;
+      btnPlay.disabled = totalAtivas() === 0;
       btnPause.disabled = true;
       btnAdd.disabled = false;
 
-      const nome = etapas[indiceAtual].nome;
+      const nome = etapas[indiceAtual]?.nome || 'Etapa';
       statusText.textContent = emTransicao
         ? `Trocando de etapa... (Pausado)`
         : `${nome} (Pausado)`;
+      statusText.className = 'status paused';
       renderizarEtapas();
     }
 
     function resetarDisplay() {
       if (rodando) return;
-      indiceAtual = 0;
       emTransicao = false;
-      const e = etapas[0];
+
+      if (totalAtivas() === 0) {
+        indiceAtual = 0;
+        pausedRestanteMs = 0;
+        deadline = null;
+        faseTotalMs = 1;
+        statusText.textContent = 'Nenhuma etapa ativa';
+        statusText.className = 'status idle';
+        display.textContent = '00:00';
+        atualizarProgresso(0, 1);
+        return;
+      }
+
+      indiceAtual = primeiroIndiceAtivo();
+      const e = etapas[indiceAtual];
       const durMs = duracaoEtapaMs(e);
       pausedRestanteMs = durMs;
       deadline = null;
+      faseTotalMs = durMs;
       statusText.textContent = e.nome;
+      statusText.className = 'status';
       display.textContent = formatarTempo(Math.ceil(durMs / 1000));
+      atualizarProgresso(durMs, durMs);
     }
 
     btnPlay.addEventListener('click', iniciar);
@@ -768,6 +1280,10 @@
     }, 250);
 
     // Inicialização
+    // Garante que indiceAtual aponte para uma etapa ativa
+    if (!etapaAtiva(etapas[indiceAtual])) {
+      indiceAtual = primeiroIndiceAtivo();
+    }
     renderizarEtapas();
     resetarDisplay();
 
