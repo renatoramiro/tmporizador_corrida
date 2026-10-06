@@ -2245,18 +2245,37 @@ ${trkpts}
       }
       const gpx = buildGpx(points, data.title || 'Treino', data.startedAt, data.endedAt);
       const filename = `atividade-${data.id}.gpx`;
-      const file = new File([gpx], filename, { type: 'application/gpx+xml' });
 
-      // 1) Compartilhamento nativo (Android) — abre a folha "compartilhar" (Strava aparece lá)
+      // 1) Salva em Downloads/ via nativo (arquivo sempre localizável)
+      let savedPath = null;
+      try {
+        if (bridge.saveGpx) {
+          const res = JSON.parse(bridge.saveGpx(filename, gpx) || '{}');
+          if (res.ok) savedPath = res.path;
+        }
+      } catch (_) { /* segue para share/download */ }
+
+      // 2) Share sheet — manda direto para o Strava (ou Drive, etc.)
+      const file = new File([gpx], filename, { type: 'application/gpx+xml' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ files: [file], title: data.title || 'Treino' });
+          showToast(savedPath ? `GPX em ${savedPath}` : 'GPX compartilhado');
           return;
         } catch (_) {
-          // usuário cancelou ou share falhou → fallback download
+          // usuário cancelou o share — o arquivo já está em Downloads (se salvou)
+          if (savedPath) {
+            showToast(`GPX salvo em ${savedPath}`);
+            return;
+          }
         }
       }
-      // 2) Download do .gpx (upload manual em strava.com/upload)
+
+      // 3) Fallback: download via WebView (último recurso)
+      if (savedPath) {
+        showToast(`GPX salvo em ${savedPath}`);
+        return;
+      }
       try {
         const url = URL.createObjectURL(file);
         const a = document.createElement('a');

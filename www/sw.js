@@ -1,4 +1,4 @@
-const CACHE_NAME = 'timer-ciclico-v5';
+const CACHE_NAME = 'timer-ciclico-v6';
 const ASSETS = [
   './',
   './index.html',

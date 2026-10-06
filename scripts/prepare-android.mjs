@@ -70,6 +70,7 @@ const PERMS = [
   'android.permission.ACCESS_FINE_LOCATION',
   'android.permission.ACCESS_COARSE_LOCATION',
   'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
+  'android.permission.WRITE_EXTERNAL_STORAGE',
 ];
 
 const SERVICE_XML = `
