@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Timer Cíclico Flexível</title>
+  <title>Ritmo — Treino por Intervalos</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="vendor/leaflet.css">
-  <meta name="theme-color" content="#0B1220">
+  <meta name="theme-color" content="#FC4C02">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Timer">
+  <meta name="apple-mobile-web-app-title" content="Ritmo">
   <style>
     :root {
       --bg: #0B1220;
@@ -72,12 +72,12 @@
       width: 42px;
       height: 42px;
       border-radius: 14px;
-      background: linear-gradient(145deg, #6366F1, #22D3EE);
+      background: linear-gradient(145deg, #FC4C02, #D63200);
       display: grid;
       place-items: center;
       font-weight: 800;
       letter-spacing: 0.02em;
-      box-shadow: 0 10px 24px rgba(99, 102, 241, 0.35);
+      box-shadow: 0 10px 24px rgba(252, 76, 2, 0.35);
     }
 
     .brand h1 {
@@ -560,6 +560,121 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .activity-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .activity-date {
+      color: var(--text-faint);
+      font-size: 0.75rem;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .type-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .type-corrida {
+      color: #FC4C02;
+      background: rgba(252, 76, 2, 0.14);
+    }
+
+    .type-caminhada {
+      color: #34D399;
+      background: rgba(52, 211, 153, 0.14);
+    }
+
+    .type-bicicleta {
+      color: #60A5FA;
+      background: rgba(96, 165, 250, 0.14);
+    }
+
+    .activity-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--text-muted);
+      font-size: 0.84rem;
+    }
+
+    .activity-stats strong {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      font-weight: 750;
+    }
+
+    .activity-stats .unit {
+      color: var(--text-faint);
+      font-size: 0.75rem;
+      margin-left: 2px;
+    }
+
+    .meta-edit {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .meta-edit .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .meta-edit input[type="text"],
+    .meta-edit select {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      min-width: 0;
+    }
+
+    .meta-edit input[type="text"] {
+      flex: 1;
+    }
+
+    .meta-edit select {
+      flex: 0 0 auto;
+      max-width: 130px;
+    }
+
+    .meta-edit input[type="text"]:focus,
+    .meta-edit select:focus {
+      border-color: rgba(34, 211, 238, 0.55);
+    }
+
+    .btn-save-meta {
+      padding: 10px 14px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
     .empty-state {
       border: 1px dashed var(--border-strong);
       border-radius: var(--radius-sm);
@@ -692,9 +807,9 @@
 <body>
   <div class="app">
     <header class="brand">
-      <div class="brand-mark">TC</div>
+      <div class="brand-mark">R</div>
       <div>
-        <h1>Timer Cíclico</h1>
+        <h1>Ritmo</h1>
         <p>Treino por intervalos com GPS e métricas</p>
       </div>
     </header>
@@ -750,6 +865,19 @@
         <button id="btnPause" class="btn-stop" disabled>Pausar</button>
       </div>
 
+      <div class="meta-edit" style="margin-bottom:14px;">
+        <div class="row">
+          <input id="activityTitle" type="text" maxlength="80" placeholder="Título da atividade (opcional)"
+            style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-size:0.95rem;outline:none;">
+          <select id="activityType"
+            style="padding:10px 10px;border-radius:12px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-size:0.95rem;outline:none;max-width:130px;">
+            <option value="corrida">Corrida</option>
+            <option value="caminhada">Caminhada</option>
+            <option value="bicicleta">Bicicleta</option>
+          </select>
+        </div>
+      </div>
+
       <button id="btnFinish" class="btn-finish" disabled>Finalizar e salvar</button>
 
       <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
@@ -780,6 +908,11 @@
         <div id="activitiesList" class="steps-list" style="max-height:420px;">
           <div class="empty-state">Nenhuma atividade salva ainda.</div>
         </div>
+        <button id="btnExportAll" class="btn-secondary" style="margin-top:12px;">Exportar dados para IA (JSON)</button>
+        <p class="hint">
+          Gera um arquivo em Downloads com todas as atividades, métricas e trajetos
+          — pronto para colar ou anexar em uma IA.
+        </p>
       </div>
     </section>
 
@@ -789,6 +922,18 @@
         <div class="section-head">
           <h2 id="detailTitle">Atividade</h2>
           <button id="btnBackActivities" class="btn-nav" style="flex:0 0 auto;padding:8px 12px;">Voltar</button>
+        </div>
+
+        <div class="meta-edit">
+          <div class="row">
+            <input id="detailTitleInput" type="text" maxlength="80" placeholder="Título da atividade">
+            <select id="detailType">
+              <option value="corrida">Corrida</option>
+              <option value="caminhada">Caminhada</option>
+              <option value="bicicleta">Bicicleta</option>
+            </select>
+            <button id="btnSaveMeta" class="btn-save-meta">Salvar</button>
+          </div>
         </div>
 
         <div class="stats-grid">
@@ -812,7 +957,7 @@
         </div>
 
         <div class="chart-wrap">
-          <h3>Melhores ritmos</h3>
+          <h3>Melhores esforços (ritmo médio por distância)</h3>
           <table class="splits-table">
             <thead>
               <tr><th>Segmento</th><th>Ritmo</th><th>Tempo</th></tr>
@@ -1844,7 +1989,10 @@
         return;
       }
       try {
-        const title = 'Treino ' + formatDate(Date.now());
+        const titleInput = document.getElementById('activityTitle');
+        const typeInput = document.getElementById('activityType');
+        const title = (titleInput.value || '').trim() || 'Treino';
+        const type = typeInput.value || 'corrida';
         const goal = goalMeters();
         // log de etapas + alvo (lido no resumo)
         try {
@@ -1853,13 +2001,14 @@
             ...etapas.filter(etapaAtiva).map((e) => ({ nome: e.nome, min: e.min, seg: e.seg })),
           ]));
         } catch (_) {}
-        const raw = bridge.saveActivity(title);
+        const raw = bridge.saveActivity(title, type);
         const res = JSON.parse(raw);
         if (res && res.ok && res.id > 0) {
           showToast('Atividade salva!');
           currentActivityId = res.id;
           gpsStarted = false;
           btnFinish.disabled = true;
+          titleInput.value = '';
           resetarDisplay();
           renderizarEtapas();
           atualizarResumo();
@@ -1905,6 +2054,17 @@
       carregarListaAtividades();
     });
 
+    function typeLabel(type) {
+      if (type === 'caminhada') return 'Caminhada';
+      if (type === 'bicicleta') return 'Bicicleta';
+      return 'Corrida';
+    }
+
+    function typeBadge(type) {
+      const t = type === 'caminhada' || type === 'bicicleta' ? type : 'corrida';
+      return `<span class="type-badge type-${t}">${typeLabel(t)}</span>`;
+    }
+
     async function carregarListaAtividades() {
       const bridge = activityBridge();
       const listEl = document.getElementById('activitiesList');
@@ -1924,20 +2084,31 @@
       const items = data.activities || [];
       countEl.textContent = String(items.length);
       if (items.length === 0) {
-        listEl.innerHTML = '<div class="empty-state">Nenhuma atividade salva ainda.<br>Corra, finalize e salve.</div>';
+        listEl.innerHTML = '<div class="empty-state">Nenhuma atividade salva ainda.<br>Finalize um treino para salvar.</div>';
         return;
       }
       listEl.innerHTML = items.map((a) => `
         <div class="activity-item" onclick="abrirDetalhe(${a.id})">
-          <div class="title">${a.title || 'Treino'}</div>
-          <div class="meta">
-            <span>${formatDate(a.startedAt)}</span>
-            <span><strong>${formatKm(a.distance || 0)}</strong></span>
-            <span>${formatDuration(a.durationSec)}</span>
-            <span>ritmo <strong>${formatPace(a.avgPaceMinKm)}</strong></span>
+          <div class="activity-top">
+            ${typeBadge(a.type)}
+            <span class="activity-date">${formatDate(a.startedAt)}</span>
+          </div>
+          <div class="title">${escapeHtml(a.title || 'Treino')}</div>
+          <div class="activity-stats">
+            <span><strong>${formatKm(a.distance || 0).replace(' km', '')}</strong><span class="unit">km</span></span>
+            <span><strong>${formatDuration(a.durationSec)}</strong></span>
+            <span><strong>${formatPace(a.avgPaceMinKm)}</strong><span class="unit">/km</span></span>
           </div>
         </div>
       `).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
     // ---- Métricas: splits e melhores esforços ----
@@ -2165,6 +2336,8 @@
       currentActivityId = data.id;
       mostrarTela('detail');
       document.getElementById('detailTitle').textContent = data.title || 'Atividade';
+      document.getElementById('detailTitleInput').value = data.title || '';
+      document.getElementById('detailType').value = data.type || 'corrida';
       document.getElementById('dDistance').textContent = formatKm(data.distance || 0);
       document.getElementById('dDuration').textContent = formatDuration(data.durationSec);
       document.getElementById('dPace').textContent = formatPace(data.avgPaceMinKm);
@@ -2197,6 +2370,127 @@
       renderSplits(points);
     }
 
+    // ---- Editar título / tipo ----
+    document.getElementById('btnSaveMeta').addEventListener('click', () => {
+      const bridge = activityBridge();
+      if (!bridge || currentActivityId == null) return;
+      const title = document.getElementById('detailTitleInput').value.trim();
+      const type = document.getElementById('detailType').value;
+      try {
+        const ok = bridge.updateActivity(currentActivityId, title || 'Treino', type);
+        if (ok) {
+          document.getElementById('detailTitle').textContent = title || 'Treino';
+          showToast('Dados atualizados');
+        } else {
+          showToast('Nada para atualizar');
+        }
+      } catch (_) {
+        showToast('Erro ao atualizar');
+      }
+    });
+
+    // ---- Exportar tudo para análise por IA ----
+    document.getElementById('btnExportAll').addEventListener('click', async () => {
+      const bridge = activityBridge();
+      if (!bridge) {
+        showToast('Export disponível apenas no app Android');
+        return;
+      }
+      let data;
+      try {
+        data = JSON.parse(bridge.exportAll());
+      } catch (_) {
+        showToast('Erro ao montar export');
+        return;
+      }
+      const activities = data.activities || [];
+      if (activities.length === 0) {
+        showToast('Nenhuma atividade para exportar');
+        return;
+      }
+
+      // Resumo legível (markdown) — ideal para colar em uma IA
+      const md = buildAiReport(data);
+      const jsonStr = JSON.stringify(data, null, 2);
+      const stamp = new Date().toISOString().slice(0, 10);
+
+      // Salva JSON (dados brutos) + MD (relatório legível)
+      const results = [];
+      for (const [name, content] of [
+        [`atividades-ia-${stamp}.json`, jsonStr],
+        [`atividades-ia-${stamp}.md`, md],
+      ]) {
+        try {
+          const res = JSON.parse(bridge.saveFile(name, content) || '{}');
+          if (res.ok) results.push(res.path);
+        } catch (_) {}
+      }
+
+      if (results.length > 0) {
+        showToast(`Exportado para ${results[0]}`);
+        // Share do relatório markdown (mais prático para IA)
+        try {
+          const file = new File([md], `atividades-ia-${stamp}.md`, { type: 'text/markdown' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'Atividades — relatório para IA' });
+          }
+        } catch (_) {}
+      } else {
+        showToast('Não foi possível exportar');
+      }
+    });
+
+    function buildAiReport(data) {
+      const acts = data.activities || [];
+      const lines = [];
+      lines.push('# Relatório de atividades — Ritmo');
+      lines.push('');
+      lines.push(`Exportado em: ${new Date(data.exportedAt || Date.now()).toLocaleString('pt-BR')}`);
+      lines.push(`Total de atividades: ${acts.length}`);
+      if (data.summary) {
+        lines.push(`Distância total: ${formatKm(data.summary.totalDistanceM || 0)}`);
+        lines.push(`Tempo total: ${formatDuration(data.summary.totalDurationSec || 0)}`);
+      }
+      lines.push('');
+      lines.push('## Atividades');
+      for (const a of acts) {
+        lines.push('');
+        lines.push(`### ${a.title || 'Treino'} (${typeLabel(a.type)})`);
+        lines.push(`- Data: ${formatDate(a.startedAt)}`);
+        lines.push(`- Distância: ${formatKm(a.distanceM || 0)}`);
+        lines.push(`- Duração: ${formatDuration(a.durationSec || 0)}`);
+        lines.push(`- Ritmo médio: ${formatPace(a.avgPaceMinKm)} /km`);
+        lines.push(`- Velocidade média: ${formatKmh(a.avgSpeedMs || 0)}`);
+        lines.push(`- Velocidade máx.: ${formatKmh(a.maxSpeedMs || 0)}`);
+        const stages = a.stages || [];
+        const goal = stages.find((s) => s && s.goalKm);
+        if (goal) lines.push(`- Alvo: ${goal.goalKm} km`);
+        const stageRows = stages.filter((s) => s && s.nome);
+        if (stageRows.length > 0) {
+          lines.push('- Etapas do ciclo:');
+          for (const s of stageRows) {
+            lines.push(`  - ${s.nome}: ${s.min}min ${s.seg}s`);
+          }
+        }
+        const pts = a.points || [];
+        if (pts.length > 1) {
+          const splits = computeSplits(pts.map((p) => ({
+            ts: p.ts, cumDist: p.cumDistM, lat: p.lat, lng: p.lng, speed: p.speedMs, alt: p.alt,
+          })));
+          if (splits.length > 0) {
+            lines.push('- Splits por km:');
+            for (const s of splits) {
+              lines.push(`  - km ${s.km}: ${formatDuration(s.timeSec)} (${formatPace(s.paceMinKm)}/km)`);
+            }
+          }
+        }
+      }
+      lines.push('');
+      lines.push('---');
+      lines.push('Os dados brutos (GPS ponto a ponto) estão no arquivo .json correspondente.');
+      return lines.join('\n');
+    }
+
     // ---- Export GPX (upload no Strava) ----
     function buildGpx(points, title, startedAt, endedAt) {
       const esc = (s) => String(s ?? '')
@@ -2211,7 +2505,7 @@
         return `      <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lng.toFixed(7)}"><ele>${alt}</ele><time>${t}</time></trkpt>`;
       }).join('\n');
       return `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Timer Ciclico" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="Ritmo" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${esc(title)}</name>
     <time>${iso(startedAt)}</time>

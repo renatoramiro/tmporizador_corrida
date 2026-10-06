@@ -1,8 +1,8 @@
 {
-  "name": "temporizador-ciclico",
-  "version": "1.4.1",
+  "name": "ritmo",
+  "version": "1.5.0",
   "private": true,
-  "description": "Temporizador automático para treinos de corrida",
+  "description": "Ritmo — treino por intervalos com GPS para corrida, caminhada e bicicleta",
   "scripts": {
     "sync": "cap sync android",
     "android": "cap open android",

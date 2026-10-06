@@ -1,6 +1,6 @@
 {
   "appId": "com.temporizadorciclico.app",
-  "appName": "Timer Cíclico",
+  "appName": "Ritmo",
   "webDir": "www",
   "backgroundColor": "#0f172a",
   "android": {

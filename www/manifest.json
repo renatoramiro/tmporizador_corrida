@@ -1,13 +1,13 @@
 {
-  "name": "Timer Cíclico",
-  "short_name": "Timer",
-  "description": "Temporizador automático para treinos de corrida",
+  "name": "Ritmo — Treino por Intervalos",
+  "short_name": "Ritmo",
+  "description": "Temporizador por intervalos com GPS para corrida, caminhada e bicicleta",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#4F46E5",
+  "background_color": "#0B1220",
+  "theme_color": "#FC4C02",
   "icons": [
     {
       "src": "icons/icon-192.png",

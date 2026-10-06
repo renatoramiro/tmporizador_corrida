@@ -124,4 +124,15 @@ console.log(`versão Android: ${pkg.version} (versionCode ${versionCode})`);
 
 fs.writeFileSync(manifestPath, xml);
 console.log('AndroidManifest.xml atualizado (permissões + TimerService + versão)');
+
+// --- Nome do app (strings.xml) ---
+const stringsPath = path.join(root, 'android', 'app', 'src', 'main', 'res', 'values', 'strings.xml');
+if (fs.existsSync(stringsPath)) {
+  let sx = fs.readFileSync(stringsPath, 'utf8');
+  sx = sx.replace(/<string name="app_name">[^<]*<\/string>/, '<string name="app_name">Ritmo</string>');
+  sx = sx.replace(/<string name="title_activity_main">[^<]*<\/string>/, '<string name="title_activity_main">Ritmo</string>');
+  fs.writeFileSync(stringsPath, sx);
+  console.log('strings.xml → app_name=Ritmo');
+}
+
 console.log('prepare-android concluído');

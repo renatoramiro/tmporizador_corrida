@@ -98,11 +98,11 @@ public class ActivityJsBridge {
      * salva com as métricas do timer (distância 0) para não perder o treino.
      */
     @JavascriptInterface
-    public String saveActivity(String title) {
+    public String saveActivity(String title, String type) {
         try {
             tracker.stop();
             JSONObject snap = tracker.snapshot();
-            long id = db.saveFromSnapshot(snap, title, stageLog);
+            long id = db.saveFromSnapshot(snap, title, type, stageLog);
             tracker.reset();
             JSONObject o = new JSONObject();
             o.put("id", id);
@@ -122,6 +122,11 @@ public class ActivityJsBridge {
     }
 
     @JavascriptInterface
+    public boolean updateActivity(double id, String title, String type) {
+        return db.updateActivity((long) id, title, type);
+    }
+
+    @JavascriptInterface
     public String listActivities() {
         return db.listActivities().toString();
     }
@@ -136,17 +141,28 @@ public class ActivityJsBridge {
         return db.deleteActivity((long) id);
     }
 
+    /** JSON completo (atividades + pontos + etapas) para análise externa. */
+    @JavascriptInterface
+    public String exportAll() {
+        return db.exportAll().toString();
+    }
+
     /**
-     * Grava o GPX em Downloads/ (MediaStore no Android 10+; arquivo público antes).
+     * Grava um arquivo em Downloads/ (MediaStore no Android 10+; arquivo público antes).
      * Retorna JSON: { ok, path } ou { ok:false, error }.
      */
     @JavascriptInterface
-    public String saveGpx(String filename, String content) {
+    public String saveFile(String filename, String content) {
         try {
             String name = (filename == null || filename.trim().isEmpty())
-                ? "atividade.gpx" : filename.trim();
-            if (!name.toLowerCase().endsWith(".gpx")) name += ".gpx";
+                ? "arquivo.txt" : filename.trim();
             name = name.replaceAll("[\\\\/:*?\"<>|]", "_");
+            String lower = name.toLowerCase();
+            String mime = "text/plain";
+            if (lower.endsWith(".gpx")) mime = "application/gpx+xml";
+            else if (lower.endsWith(".json")) mime = "application/json";
+            else if (lower.endsWith(".csv")) mime = "text/csv";
+            else if (lower.endsWith(".md")) mime = "text/markdown";
             byte[] bytes = (content == null ? "" : content).getBytes(StandardCharsets.UTF_8);
 
             String path;
@@ -154,7 +170,7 @@ public class ActivityJsBridge {
                 ContentResolver resolver = activity.getContentResolver();
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.Downloads.DISPLAY_NAME, name);
-                values.put(MediaStore.Downloads.MIME_TYPE, "application/gpx+xml");
+                values.put(MediaStore.Downloads.MIME_TYPE, mime);
                 values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
                 values.put(MediaStore.Downloads.IS_PENDING, 1);
                 Uri uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
@@ -200,6 +216,12 @@ public class ActivityJsBridge {
                 return "{\"ok\":false,\"error\":\"falha ao salvar\"}";
             }
         }
+    }
+
+    /** Compat: export GPX usa o mesmo gravador de Downloads. */
+    @JavascriptInterface
+    public String saveGpx(String filename, String content) {
+        return saveFile(filename, content);
     }
 
     private boolean hasWritePermission() {

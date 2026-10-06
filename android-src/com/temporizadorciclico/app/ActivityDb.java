@@ -15,7 +15,7 @@ import org.json.JSONObject;
 public class ActivityDb extends SQLiteOpenHelper {
 
     private static final String DB_NAME = "atividades.db";
-    private static final int DB_VERSION = 1;
+    private static final int DB_VERSION = 2;
 
     public ActivityDb(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
@@ -27,6 +27,7 @@ public class ActivityDb extends SQLiteOpenHelper {
             "CREATE TABLE activities (" +
             "  id INTEGER PRIMARY KEY AUTOINCREMENT," +
             "  title TEXT NOT NULL," +
+            "  type TEXT NOT NULL DEFAULT 'corrida'," +
             "  started_at INTEGER NOT NULL," +
             "  ended_at INTEGER NOT NULL," +
             "  duration_sec REAL NOT NULL," +
@@ -56,13 +57,17 @@ public class ActivityDb extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS points");
-        db.execSQL("DROP TABLE IF EXISTS activities");
-        onCreate(db);
+        // Preserva histórico: só adiciona colunas novas.
+        if (oldVersion < 2) {
+            try {
+                db.execSQL("ALTER TABLE activities ADD COLUMN type TEXT NOT NULL DEFAULT 'corrida'");
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     /** Persiste a atividade a partir do snapshot do LocationTracker. */
-    public long saveFromSnapshot(JSONObject snap, String title, JSONArray stageLog) {
+    public long saveFromSnapshot(JSONObject snap, String title, String type, JSONArray stageLog) {
         SQLiteDatabase db = getWritableDatabase();
         db.beginTransaction();
         try {
@@ -76,6 +81,7 @@ public class ActivityDb extends SQLiteOpenHelper {
 
             ContentValues cv = new ContentValues();
             cv.put("title", title != null && !title.isEmpty() ? title : "Treino");
+            cv.put("type", normalizeType(type));
             cv.put("started_at", startedAt);
             cv.put("ended_at", endedAt);
             cv.put("duration_sec", elapsed);
@@ -125,6 +131,29 @@ public class ActivityDb extends SQLiteOpenHelper {
         }
     }
 
+    public static String normalizeType(String type) {
+        if (type == null) return "corrida";
+        String t = type.trim().toLowerCase();
+        if (t.equals("caminhada") || t.equals("walk") || t.equals("walking")) return "caminhada";
+        if (t.equals("bicicleta") || t.equals("bike") || t.equals("cycling") || t.equals("ciclismo")) return "bicicleta";
+        return "corrida";
+    }
+
+    /** Atualiza título e tipo (editáveis pelo usuário). */
+    public boolean updateActivity(long id, String title, String type) {
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues cv = new ContentValues();
+        if (title != null && !title.trim().isEmpty()) {
+            cv.put("title", title.trim());
+        }
+        if (type != null && !type.trim().isEmpty()) {
+            cv.put("type", normalizeType(type));
+        }
+        if (cv.size() == 0) return false;
+        int n = db.update("activities", cv, "id = ?", new String[]{String.valueOf(id)});
+        return n > 0;
+    }
+
     public JSONObject listActivities() {
         JSONObject out = new JSONObject();
         JSONArray arr = new JSONArray();
@@ -132,7 +161,7 @@ public class ActivityDb extends SQLiteOpenHelper {
         Cursor c = null;
         try {
             c = db.rawQuery(
-                "SELECT id, title, started_at, ended_at, duration_sec, distance_m," +
+                "SELECT id, title, type, started_at, ended_at, duration_sec, distance_m," +
                 "       avg_speed, max_speed, avg_pace_min_km" +
                 " FROM activities ORDER BY started_at DESC",
                 null
@@ -141,13 +170,14 @@ public class ActivityDb extends SQLiteOpenHelper {
                 JSONObject o = new JSONObject();
                 o.put("id", c.getLong(0));
                 o.put("title", c.getString(1));
-                o.put("startedAt", c.getLong(2));
-                o.put("endedAt", c.getLong(3));
-                o.put("durationSec", c.getDouble(4));
-                o.put("distance", c.getDouble(5));
-                o.put("avgSpeed", c.getDouble(6));
-                o.put("maxSpeed", c.getDouble(7));
-                o.put("avgPaceMinKm", c.getDouble(8));
+                o.put("type", c.getString(2) != null ? c.getString(2) : "corrida");
+                o.put("startedAt", c.getLong(3));
+                o.put("endedAt", c.getLong(4));
+                o.put("durationSec", c.getDouble(5));
+                o.put("distance", c.getDouble(6));
+                o.put("avgSpeed", c.getDouble(7));
+                o.put("maxSpeed", c.getDouble(8));
+                o.put("avgPaceMinKm", c.getDouble(9));
                 arr.put(o);
             }
             out.put("activities", arr);
@@ -169,7 +199,7 @@ public class ActivityDb extends SQLiteOpenHelper {
         Cursor c = null;
         try {
             c = db.rawQuery(
-                "SELECT id, title, started_at, ended_at, duration_sec, distance_m," +
+                "SELECT id, title, type, started_at, ended_at, duration_sec, distance_m," +
                 "       avg_speed, max_speed, avg_pace_min_km, steps_json" +
                 " FROM activities WHERE id = ?",
                 new String[]{String.valueOf(id)}
@@ -181,15 +211,16 @@ public class ActivityDb extends SQLiteOpenHelper {
             out.put("found", true);
             out.put("id", c.getLong(0));
             out.put("title", c.getString(1));
-            out.put("startedAt", c.getLong(2));
-            out.put("endedAt", c.getLong(3));
-            out.put("durationSec", c.getDouble(4));
-            out.put("distance", c.getDouble(5));
-            out.put("avgSpeed", c.getDouble(6));
-            out.put("maxSpeed", c.getDouble(7));
-            out.put("avgPaceMinKm", c.getDouble(8));
+            out.put("type", c.getString(2) != null ? c.getString(2) : "corrida");
+            out.put("startedAt", c.getLong(3));
+            out.put("endedAt", c.getLong(4));
+            out.put("durationSec", c.getDouble(5));
+            out.put("distance", c.getDouble(6));
+            out.put("avgSpeed", c.getDouble(7));
+            out.put("maxSpeed", c.getDouble(8));
+            out.put("avgPaceMinKm", c.getDouble(9));
             try {
-                out.put("steps", new JSONArray(c.getString(9)));
+                out.put("steps", new JSONArray(c.getString(10)));
             } catch (Exception e) {
                 out.put("steps", new JSONArray());
             }
@@ -239,5 +270,92 @@ public class ActivityDb extends SQLiteOpenHelper {
         } finally {
             db.endTransaction();
         }
+    }
+
+    /**
+     * Exporta todas as atividades (com pontos GPS e etapas) em JSON estruturado
+     * para análise externa (IA, planilhas, scripts).
+     */
+    public JSONObject exportAll() {
+        JSONObject out = new JSONObject();
+        JSONArray activities = new JSONArray();
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor c = null;
+        try {
+            out.put("exportedAt", System.currentTimeMillis());
+            out.put("app", "Ritmo");
+            out.put("format", "ritmo.export/1");
+
+            c = db.rawQuery(
+                "SELECT id, title, type, started_at, ended_at, duration_sec, distance_m," +
+                "       avg_speed, max_speed, avg_pace_min_km, steps_json" +
+                " FROM activities ORDER BY started_at ASC",
+                null
+            );
+            double totalDist = 0, totalDur = 0;
+            int count = 0;
+            while (c.moveToNext()) {
+                JSONObject a = new JSONObject();
+                long id = c.getLong(0);
+                a.put("id", id);
+                a.put("title", c.getString(1));
+                a.put("type", c.getString(2) != null ? c.getString(2) : "corrida");
+                a.put("startedAt", c.getLong(3));
+                a.put("endedAt", c.getLong(4));
+                a.put("durationSec", c.getDouble(5));
+                a.put("distanceM", c.getDouble(6));
+                a.put("avgSpeedMs", c.getDouble(7));
+                a.put("maxSpeedMs", c.getDouble(8));
+                a.put("avgPaceMinKm", c.getDouble(9));
+                try {
+                    a.put("stages", new JSONArray(c.getString(10)));
+                } catch (Exception e) {
+                    a.put("stages", new JSONArray());
+                }
+                totalDist += c.getDouble(6);
+                totalDur += c.getDouble(5);
+                count++;
+
+                JSONArray points = new JSONArray();
+                Cursor p = null;
+                try {
+                    p = db.rawQuery(
+                        "SELECT ts, lat, lng, alt, speed, acc, cum_dist" +
+                        " FROM points WHERE activity_id = ? ORDER BY ts ASC",
+                        new String[]{String.valueOf(id)}
+                    );
+                    while (p.moveToNext()) {
+                        JSONObject pt = new JSONObject();
+                        pt.put("ts", p.getLong(0));
+                        pt.put("lat", p.getDouble(1));
+                        pt.put("lng", p.getDouble(2));
+                        pt.put("alt", p.isNull(3) ? 0 : p.getDouble(3));
+                        pt.put("speedMs", p.isNull(4) ? 0 : p.getDouble(4));
+                        pt.put("accM", p.isNull(5) ? 0 : p.getDouble(5));
+                        pt.put("cumDistM", p.isNull(6) ? 0 : p.getDouble(6));
+                        points.put(pt);
+                    }
+                } finally {
+                    if (p != null) p.close();
+                }
+                a.put("points", points);
+                activities.put(a);
+            }
+            out.put("activities", activities);
+
+            JSONObject summary = new JSONObject();
+            summary.put("activityCount", count);
+            summary.put("totalDistanceM", totalDist);
+            summary.put("totalDurationSec", totalDur);
+            out.put("summary", summary);
+        } catch (Exception e) {
+            try {
+                out.put("error", e.getMessage());
+            } catch (Exception ignored) {
+            }
+        } finally {
+            if (c != null) c.close();
+        }
+        return out;
     }
 }
