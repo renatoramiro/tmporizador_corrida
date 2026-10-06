@@ -23,15 +23,19 @@ if (!fs.existsSync(resDir)) {
 }
 
 // --- Ícones ---
-for (const folder of fs.readdirSync(assets)) {
-  const srcDir = path.join(assets, folder);
-  if (!fs.statSync(srcDir).isDirectory()) continue;
-  const dstDir = path.join(resDir, folder);
-  fs.mkdirSync(dstDir, { recursive: true });
-  for (const file of fs.readdirSync(srcDir)) {
-    fs.copyFileSync(path.join(srcDir, file), path.join(dstDir, file));
+if (fs.existsSync(assets)) {
+  for (const folder of fs.readdirSync(assets)) {
+    const srcDir = path.join(assets, folder);
+    if (!fs.statSync(srcDir).isDirectory()) continue;
+    const dstDir = path.join(resDir, folder);
+    fs.mkdirSync(dstDir, { recursive: true });
+    for (const file of fs.readdirSync(srcDir)) {
+      fs.copyFileSync(path.join(srcDir, file), path.join(dstDir, file));
+    }
+    console.log('copiado res/' + folder);
   }
-  console.log('copiado res/' + folder);
+} else {
+  console.warn('assets/android não encontrado, pulando ícones');
 }
 
 // --- Áudio de alarme (res/raw/alarm_beep.wav) ---
@@ -106,12 +110,16 @@ xml = xml.replace(/\n{3,}/g, '\n\n');
 xml = xml.replace(/\s*<!-- Permissions -->\s*/g, '\n');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+// versionCode estável a partir do semver (1.4.0 → 10400); precisa sempre crescer para o Android aceitar update.
+const [maj = 0, min = 0, pat = 0] = String(pkg.version).split('.').map((n) => parseInt(n, 10) || 0);
+const versionCode = maj * 10000 + min * 100 + pat;
 if (xml.includes('android:versionCode')) {
-  xml = xml.replace(/android:versionCode="\d+"/, 'android:versionCode="4"');
+  xml = xml.replace(/android:versionCode="\d+"/, `android:versionCode="${versionCode}"`);
   xml = xml.replace(/android:versionName="[^"]*"/, `android:versionName="${pkg.version}"`);
 } else {
-  xml = xml.replace('<manifest', `<manifest android:versionCode="4" android:versionName="${pkg.version}"`);
+  xml = xml.replace('<manifest', `<manifest android:versionCode="${versionCode}" android:versionName="${pkg.version}"`);
 }
+console.log(`versão Android: ${pkg.version} (versionCode ${versionCode})`);
 
 fs.writeFileSync(manifestPath, xml);
 console.log('AndroidManifest.xml atualizado (permissões + TimerService + versão)');
