@@ -1,9 +1,11 @@
-const CACHE_NAME = 'timer-ciclico-v2';
+const CACHE_NAME = 'timer-ciclico-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './silence.wav',
+  './vendor/leaflet.js',
+  './vendor/leaflet.css',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-192-maskable.png',

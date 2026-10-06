@@ -29,6 +29,12 @@ public class MainActivity extends BridgeActivity {
             if (getBridge() != null && getBridge().getWebView() != null) {
                 getBridge().getWebView().addJavascriptInterface(new TimerJsBridge(this), "TimerAndroid");
                 Log.i(TAG, "TimerAndroid bridge registrado");
+
+                ActivityDb db = new ActivityDb(this);
+                LocationTracker tracker = LocationTracker.get(this);
+                ActivityJsBridge activityBridge = new ActivityJsBridge(this, tracker, db);
+                getBridge().getWebView().addJavascriptInterface(activityBridge, "ActivityAndroid");
+                Log.i(TAG, "ActivityAndroid bridge registrado");
             }
         } catch (Throwable t) {
             Log.e(TAG, "Falha ao registrar TimerAndroid bridge", t);

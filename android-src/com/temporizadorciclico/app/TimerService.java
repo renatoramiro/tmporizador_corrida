@@ -107,6 +107,11 @@ public class TimerService extends Service {
         handler.post(tick);
         startAsForeground(statusTitle());
         scheduleNativeAlarms();
+        // GPS continua em background com o service (tela bloqueada / app minimizado)
+        try {
+            LocationTracker.get(this).start();
+        } catch (Exception ignored) {
+        }
         // NOT_STICKY: o sistema não deve reanimar o service sozinho.
         // Continuidade do treino (tela bloqueada) fica por conta do AlarmManager + prefs.
         return START_NOT_STICKY;
@@ -235,6 +240,11 @@ public class TimerService extends Service {
         } catch (Exception ignored) {
         }
         try {
+            // Fechou o app: encerra o GPS junto (sem salvar — use "Finalizar" para gravar)
+            LocationTracker.get(this).stop();
+        } catch (Exception ignored) {
+        }
+        try {
             stopSelf();
         } catch (Exception ignored) {
         }
@@ -255,6 +265,10 @@ public class TimerService extends Service {
         }
         try {
             AlarmAlert.stop();
+        } catch (Exception ignored) {
+        }
+        try {
+            LocationTracker.get(ctx).stop();
         } catch (Exception ignored) {
         }
         try {

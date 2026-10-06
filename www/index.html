@@ -7,6 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="vendor/leaflet.css">
   <meta name="theme-color" content="#0B1220">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -428,6 +429,264 @@
       background: rgba(148, 163, 184, 0.28);
       border-radius: 999px;
     }
+
+    /* ---------- Navegação / telas ---------- */
+    .top-nav {
+      display: flex;
+      gap: 8px;
+      margin: 0 4px 12px;
+    }
+
+    .btn-nav {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    .btn-nav.active {
+      background: var(--primary-soft);
+      color: #C7D2FE;
+      border-color: rgba(129, 140, 248, 0.4);
+    }
+
+    .screen { display: none; }
+    .screen.visible { display: block; }
+
+    /* ---------- GPS ao vivo ---------- */
+    .gps-panel {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .gps-stat {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .gps-stat .label {
+      display: block;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 4px;
+      font-weight: 650;
+    }
+
+    .gps-stat .value {
+      font-size: 1.05rem;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .gps-stat .value.small { font-size: 0.92rem; }
+
+    .gps-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      color: var(--text-faint);
+      font-size: 0.78rem;
+    }
+
+    .gps-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-faint);
+    }
+
+    .gps-dot.on { background: var(--success); box-shadow: 0 0 8px rgba(52, 211, 153, 0.7); }
+    .gps-dot.warn { background: var(--warning); }
+
+    .btn-finish {
+      width: 100%;
+      padding: 13px;
+      margin-bottom: 14px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      color: #fff;
+      box-shadow: 0 10px 22px rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-finish:disabled {
+      opacity: 0.35;
+      box-shadow: none;
+    }
+
+    /* ---------- Lista de atividades ---------- */
+    .activity-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .activity-item:hover {
+      border-color: rgba(34, 211, 238, 0.35);
+      background: rgba(34, 211, 238, 0.05);
+    }
+
+    .activity-item .title {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .activity-item .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+    }
+
+    .activity-item .meta strong {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty-state {
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    /* ---------- Detalhe da atividade ---------- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .stat-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .stat-card .label {
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      font-weight: 650;
+    }
+
+    .stat-card .value {
+      margin-top: 4px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    #routeMap {
+      height: 260px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+      background: var(--bg-input);
+      z-index: 0;
+    }
+
+    .chart-wrap {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chart-wrap h3 {
+      margin: 0 0 8px;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .chart-wrap canvas {
+      width: 100%;
+      height: 140px;
+      display: block;
+    }
+
+    .splits-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .splits-table th {
+      text-align: left;
+      color: var(--text-faint);
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .splits-table td {
+      padding: 9px 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .splits-table tr:last-child td { border-bottom: none; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(20px);
+      background: #1E293B;
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 50;
+      max-width: 90vw;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -436,10 +695,17 @@
       <div class="brand-mark">TC</div>
       <div>
         <h1>Timer Cíclico</h1>
-        <p>Treino por intervalos com etapas selecionáveis</p>
+        <p>Treino por intervalos com GPS e métricas</p>
       </div>
     </header>
 
+    <nav class="top-nav">
+      <button id="navTimer" class="btn-nav active">Treino</button>
+      <button id="navActivities" class="btn-nav">Atividades</button>
+    </nav>
+
+    <!-- ======== TELA TREINO ======== -->
+    <section id="screenTimer" class="screen visible">
     <div class="card">
       <div id="warnBanner" class="warn-banner">Ative ao menos uma etapa para iniciar o treino.</div>
 
@@ -451,10 +717,40 @@
         </div>
       </div>
 
+      <div class="gps-status">
+        <span id="gpsDot" class="gps-dot"></span>
+        <span id="gpsStatusText">GPS pronto para iniciar</span>
+      </div>
+
+      <div class="gps-panel">
+        <div class="gps-stat">
+          <span class="label">Distância</span>
+          <span id="gpsDistance" class="value">0,00 km</span>
+        </div>
+        <div class="gps-stat">
+          <span class="label">Ritmo</span>
+          <span id="gpsPace" class="value">--:--</span>
+        </div>
+        <div class="gps-stat">
+          <span class="label">Velocidade</span>
+          <span id="gpsSpeed" class="value small">0,0 km/h</span>
+        </div>
+      </div>
+
+      <div class="goal-row" style="display:flex;gap:8px;align-items:center;margin-bottom:14px;">
+        <label for="goalKm" style="font-size:0.82rem;color:var(--text-muted);font-weight:650;">Alvo</label>
+        <input id="goalKm" type="number" inputmode="decimal" min="0" step="0.1" placeholder="ex.: 3 km"
+          style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-size:0.95rem;outline:none;">
+        <span style="color:var(--text-faint);font-size:0.85rem;font-weight:650;">km</span>
+      </div>
+      <div id="goalBanner" class="warn-banner" style="display:none;background:rgba(52,211,153,0.12);border-color:rgba(52,211,153,0.35);color:#6EE7B7;"></div>
+
       <div class="controls">
         <button id="btnPlay" class="btn-start">Play</button>
         <button id="btnPause" class="btn-stop" disabled>Pausar</button>
       </div>
+
+      <button id="btnFinish" class="btn-finish" disabled>Finalizar e salvar</button>
 
       <button id="btnAdd" class="btn-add">+ Adicionar Etapa</button>
 
@@ -469,11 +765,81 @@
 
       <p class="hint">
         Use o switch para incluir ou remover uma etapa do ciclo em tempo de execução.
-        Etapas desativadas ficam salvas e podem ser reativadas quando quiser.
+        Ao finalizar, a atividade é salva no aparelho com mapa, gráficos e splits.
       </p>
     </div>
+    </section>
+
+    <!-- ======== TELA ATIVIDADES ======== -->
+    <section id="screenActivities" class="screen">
+      <div class="card">
+        <div class="section-head">
+          <h2>Atividades</h2>
+          <span id="activitiesCount" class="badge">0</span>
+        </div>
+        <div id="activitiesList" class="steps-list" style="max-height:420px;">
+          <div class="empty-state">Nenhuma atividade salva ainda.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== TELA DETALHE ======== -->
+    <section id="screenDetail" class="screen">
+      <div class="card">
+        <div class="section-head">
+          <h2 id="detailTitle">Atividade</h2>
+          <button id="btnBackActivities" class="btn-nav" style="flex:0 0 auto;padding:8px 12px;">Voltar</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Distância</div><div id="dDistance" class="value">—</div></div>
+          <div class="stat-card"><div class="label">Duração</div><div id="dDuration" class="value">—</div></div>
+          <div class="stat-card"><div class="label">Ritmo médio</div><div id="dPace" class="value">—</div></div>
+          <div class="stat-card"><div class="label">Vel. média</div><div id="dAvgSpeed" class="value">—</div></div>
+          <div class="stat-card"><div class="label">Vel. máx.</div><div id="dMaxSpeed" class="value">—</div></div>
+          <div class="stat-card"><div class="label">Alvo</div><div id="dGoal" class="value">—</div></div>
+        </div>
+
+        <div id="routeMap"></div>
+
+        <div class="chart-wrap">
+          <h3>Ritmo / velocidade</h3>
+          <canvas id="chartSpeed"></canvas>
+        </div>
+        <div class="chart-wrap">
+          <h3>Elevação</h3>
+          <canvas id="chartElev"></canvas>
+        </div>
+
+        <div class="chart-wrap">
+          <h3>Melhores ritmos</h3>
+          <table class="splits-table">
+            <thead>
+              <tr><th>Segmento</th><th>Ritmo</th><th>Tempo</th></tr>
+            </thead>
+            <tbody id="bestPaces"></tbody>
+          </table>
+        </div>
+
+        <div class="chart-wrap">
+          <h3>Splits por km</h3>
+          <table class="splits-table">
+            <thead>
+              <tr><th>Km</th><th>Parcial</th><th>Ritmo</th></tr>
+            </thead>
+            <tbody id="splitsKm"></tbody>
+          </table>
+        </div>
+
+        <button id="btnExportGpx" class="btn-secondary">Exportar GPX (Strava)</button>
+        <button id="btnDeleteActivity" class="btn-secondary" style="margin-top:10px;color:var(--danger);">Excluir atividade</button>
+      </div>
+    </section>
   </div>
 
+  <div id="toast" class="toast"></div>
+
+  <script src="vendor/leaflet.js"></script>
   <script>
     // ---------- Estado ----------
     // O tempo é medido por timestamp (deadline), não por decremento de contador.
@@ -1248,6 +1614,11 @@
       iniciarKeepAliveAudio();
       agendarNotificacoesNativas();
       atualizar();
+      // GPS do treino (percurso + métricas)
+      try {
+        if (typeof startGpsTracking === 'function') startGpsTracking();
+        btnFinish.disabled = false;
+      } catch (_) {}
     }
 
     function pausar() {
@@ -1312,6 +1683,626 @@
     setInterval(() => {
       if (rodando) atualizar();
     }, 250);
+
+    // ===================== GPS + Atividades (estilo Strava) =====================
+    const gpsDot = document.getElementById('gpsDot');
+    const gpsStatusText = document.getElementById('gpsStatusText');
+    const gpsDistanceEl = document.getElementById('gpsDistance');
+    const gpsPaceEl = document.getElementById('gpsPace');
+    const gpsSpeedEl = document.getElementById('gpsSpeed');
+    const btnFinish = document.getElementById('btnFinish');
+    const goalKmInput = document.getElementById('goalKm');
+    const goalBanner = document.getElementById('goalBanner');
+
+    let gpsStarted = false;
+    let goalAlerted = false;
+    let currentActivityId = null;
+    let routeMap = null;
+    let routeLayer = null;
+
+    function activityBridge() {
+      return window.ActivityAndroid || null;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(showToast._h);
+      showToast._h = setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function formatKm(m) {
+      return (Math.max(0, m) / 1000).toFixed(2).replace('.', ',') + ' km';
+    }
+
+    function formatPace(minPerKm) {
+      if (!minPerKm || !isFinite(minPerKm) || minPerKm <= 0) return '--:--';
+      let s = Math.round(minPerKm * 60);
+      if (s > 59 * 60) s = 59 * 60;
+      const m = Math.floor(s / 60);
+      const sec = (s % 60).toString().padStart(2, '0');
+      return `${m}:${sec}`;
+    }
+
+    function formatPaceFromSpeed(mps) {
+      if (!mps || mps < 0.15) return '--:--';
+      return formatPace((1000 / mps) / 60);
+    }
+
+    function formatKmh(mps) {
+      return ((mps || 0) * 3.6).toFixed(1).replace('.', ',') + ' km/h';
+    }
+
+    function formatDuration(sec) {
+      sec = Math.max(0, Math.floor(sec || 0));
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function formatDate(ts) {
+      try {
+        return new Date(ts).toLocaleString('pt-BR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        });
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function goalMeters() {
+      const v = parseFloat(goalKmInput.value);
+      return Number.isFinite(v) && v > 0 ? v * 1000 : 0;
+    }
+
+    function checkGoal(distanceM) {
+      const goal = goalMeters();
+      if (!goal || goalAlerted) return;
+      if (distanceM >= goal) {
+        goalAlerted = true;
+        goalBanner.style.display = 'block';
+        goalBanner.textContent = `Alvo de ${(goal / 1000).toFixed(1).replace('.', ',')} km atingido!`;
+        try {
+          if (audioCtx) {
+            const t = audioCtx.currentTime + 0.02;
+            beep(audioCtx, 880, t, 0.18, 0.22);
+            beep(audioCtx, 880, t + 0.28, 0.18, 0.22);
+            beep(audioCtx, 1318.5, t + 0.56, 0.5, 0.25);
+          }
+        } catch (_) {}
+        try {
+          if ('vibrate' in navigator) navigator.vibrate([200, 100, 200, 100, 400]);
+        } catch (_) {}
+        showToast('Alvo de distância atingido!');
+      }
+    }
+
+    async function atualizarGpsLive() {
+      const bridge = activityBridge();
+      if (!bridge) return;
+      let stats = null;
+      try {
+        stats = JSON.parse(bridge.getLiveGps());
+      } catch (_) {
+        return;
+      }
+
+      gpsDistanceEl.textContent = formatKm(stats.distance || 0);
+      gpsSpeedEl.textContent = formatKmh(stats.speed || 0);
+      if (stats.avgSpeed > 0.15) {
+        gpsPaceEl.textContent = formatPaceFromSpeed(stats.avgSpeed);
+      } else if (stats.speed > 0.15) {
+        gpsPaceEl.textContent = formatPaceFromSpeed(stats.speed);
+      } else {
+        gpsPaceEl.textContent = '--:--';
+      }
+
+      if (stats.tracking && stats.hasFix) {
+        gpsDot.className = 'gps-dot on';
+        gpsStatusText.textContent = `GPS ativo · ±${Math.round(stats.accuracy || 0)} m · ${stats.points || 0} pts`;
+      } else if (stats.tracking) {
+        gpsDot.className = 'gps-dot warn';
+        gpsStatusText.textContent = 'Buscando sinal GPS...';
+      }
+
+      checkGoal(stats.distance || 0);
+    }
+
+    async function startGpsTracking() {
+      const bridge = activityBridge();
+      if (!bridge) return;
+      try {
+        if (!bridge.hasLocationPermission()) {
+          bridge.requestLocationPermission();
+          showToast('Permita o acesso à localização para gravar o percurso');
+          // tenta de novo em ~1.5s após o diálogo
+          setTimeout(() => {
+            try {
+              if (bridge.hasLocationPermission()) {
+                bridge.startGps();
+                gpsStarted = true;
+              }
+            } catch (_) {}
+          }, 1500);
+          return;
+        }
+        bridge.startGps();
+        gpsStarted = true;
+        goalAlerted = false;
+        goalBanner.style.display = 'none';
+      } catch (_) {}
+    }
+
+    async function salvarAtividade() {
+      const bridge = activityBridge();
+      if (!bridge) {
+        showToast('GPS indisponível neste ambiente');
+        return;
+      }
+      try {
+        const title = 'Treino ' + formatDate(Date.now());
+        const goal = goalMeters();
+        // log de etapas + alvo (lido no resumo)
+        try {
+          bridge.setStageLog(JSON.stringify([
+            ...(goal ? [{ goalKm: goal / 1000 }] : []),
+            ...etapas.filter(etapaAtiva).map((e) => ({ nome: e.nome, min: e.min, seg: e.seg })),
+          ]));
+        } catch (_) {}
+        const raw = bridge.saveActivity(title);
+        const res = JSON.parse(raw);
+        if (res && res.ok && res.id > 0) {
+          showToast('Atividade salva!');
+          currentActivityId = res.id;
+          gpsStarted = false;
+          btnFinish.disabled = true;
+          resetarDisplay();
+          renderizarEtapas();
+          atualizarResumo();
+          await abrirDetalhe(res.id);
+        } else {
+          showToast('Nada para salvar ou erro ao salvar');
+        }
+      } catch (e) {
+        showToast('Erro ao salvar atividade');
+      }
+    }
+
+    btnFinish.addEventListener('click', () => {
+      // encerra o timer e salva com o que o GPS capturou
+      if (rodando) pausar();
+      try { nativoStop(); } catch (_) {}
+      salvarAtividade();
+    });
+
+    // ---- Navegação entre telas ----
+    const screens = {
+      timer: document.getElementById('screenTimer'),
+      activities: document.getElementById('screenActivities'),
+      detail: document.getElementById('screenDetail'),
+    };
+    const navTimer = document.getElementById('navTimer');
+    const navActivities = document.getElementById('navActivities');
+
+    function mostrarTela(name) {
+      Object.values(screens).forEach((s) => s.classList.remove('visible'));
+      if (screens[name]) screens[name].classList.add('visible');
+      navTimer.classList.toggle('active', name === 'timer');
+      navActivities.classList.toggle('active', name === 'activities' || name === 'detail');
+    }
+
+    navTimer.addEventListener('click', () => mostrarTela('timer'));
+    navActivities.addEventListener('click', () => {
+      mostrarTela('activities');
+      carregarListaAtividades();
+    });
+    document.getElementById('btnBackActivities').addEventListener('click', () => {
+      mostrarTela('activities');
+      carregarListaAtividades();
+    });
+
+    async function carregarListaAtividades() {
+      const bridge = activityBridge();
+      const listEl = document.getElementById('activitiesList');
+      const countEl = document.getElementById('activitiesCount');
+      if (!bridge) {
+        listEl.innerHTML = '<div class="empty-state">Histórico disponível apenas no app Android.</div>';
+        countEl.textContent = '0';
+        return;
+      }
+      let data;
+      try {
+        data = JSON.parse(bridge.listActivities());
+      } catch (_) {
+        listEl.innerHTML = '<div class="empty-state">Erro ao carregar atividades.</div>';
+        return;
+      }
+      const items = data.activities || [];
+      countEl.textContent = String(items.length);
+      if (items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Nenhuma atividade salva ainda.<br>Corra, finalize e salve.</div>';
+        return;
+      }
+      listEl.innerHTML = items.map((a) => `
+        <div class="activity-item" onclick="abrirDetalhe(${a.id})">
+          <div class="title">${a.title || 'Treino'}</div>
+          <div class="meta">
+            <span>${formatDate(a.startedAt)}</span>
+            <span><strong>${formatKm(a.distance || 0)}</strong></span>
+            <span>${formatDuration(a.durationSec)}</span>
+            <span>ritmo <strong>${formatPace(a.avgPaceMinKm)}</strong></span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ---- Métricas: splits e melhores esforços ----
+    function computeSplits(points) {
+      const splits = [];
+      if (!points || points.length < 2) return splits;
+      let kmIndex = 1;
+      let splitStart = points[0];
+      let splitStartDist = points[0].cumDist || 0;
+      for (let i = 1; i < points.length; i++) {
+        const p = points[i];
+        const d = p.cumDist || 0;
+        if (d >= splitStartDist + 1000 || i === points.length - 1) {
+          const dt = (p.ts - splitStart.ts) / 1000;
+          const dd = d - splitStartDist;
+          if (dd > 50 && dt > 1) {
+            splits.push({
+              km: kmIndex,
+              timeSec: dt,
+              paceMinKm: (dt / 60) / (dd / 1000),
+              dist: dd,
+            });
+          }
+          kmIndex++;
+          splitStart = p;
+          splitStartDist = d;
+        }
+      }
+      return splits;
+    }
+
+    /** Melhor ritmo médio em janelas de N metros (sliding). */
+    function bestWindowPace(points, windowM) {
+      if (!points || points.length < 2) return null;
+      let best = null;
+      let left = 0;
+      for (let right = 1; right < points.length; right++) {
+        const dRight = points[right].cumDist || 0;
+        while (left < right && (dRight - (points[left].cumDist || 0)) > windowM) left++;
+        // tenta fechar janelas que passaram de windowM
+        const dLeft = points[left].cumDist || 0;
+        const span = dRight - dLeft;
+        if (span >= windowM * 0.95 && span <= windowM * 1.25) {
+          const dt = (points[right].ts - points[left].ts) / 1000;
+          if (dt > 3) {
+            const pace = (dt / 60) / (span / 1000);
+            if (!best || pace < best.paceMinKm) {
+              best = { paceMinKm: pace, timeSec: dt, dist: span };
+            }
+          }
+        }
+      }
+      return best;
+    }
+
+    const SEGMENTS = [
+      { label: '400 m', meters: 400 },
+      { label: '1/2 milha', meters: 804.672 },
+      { label: '1 km', meters: 1000 },
+      { label: '1 milha', meters: 1609.344 },
+      { label: '3 km', meters: 3000 },
+      { label: '5 km', meters: 5000 },
+    ];
+
+    function renderBestPaces(points) {
+      const body = document.getElementById('bestPaces');
+      const rows = [];
+      for (const seg of SEGMENTS) {
+        const best = bestWindowPace(points, seg.meters);
+        rows.push(`
+          <tr>
+            <td>${seg.label}</td>
+            <td>${best ? formatPace(best.paceMinKm) : '—'}</td>
+            <td>${best ? formatDuration(best.timeSec) : '—'}</td>
+          </tr>
+        `);
+      }
+      body.innerHTML = rows.join('');
+    }
+
+    function renderSplits(points) {
+      const body = document.getElementById('splitsKm');
+      const splits = computeSplits(points);
+      if (splits.length === 0) {
+        body.innerHTML = '<tr><td colspan="3" style="color:var(--text-muted)">Sem dados suficientes</td></tr>';
+        return;
+      }
+      body.innerHTML = splits.map((s) => `
+        <tr>
+          <td>${s.km}</td>
+          <td>${formatDuration(s.timeSec)}</td>
+          <td>${formatPace(s.paceMinKm)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ---- Gráficos canvas ----
+    function drawChart(canvas, values, color, fillColor) {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth || 300;
+      const cssH = canvas.clientHeight || 140;
+      canvas.width = cssW * dpr;
+      canvas.height = cssH * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      if (!values || values.length < 2) {
+        ctx.fillStyle = '#64748B';
+        ctx.font = '12px system-ui';
+        ctx.fillText('Sem dados', 10, 20);
+        return;
+      }
+
+      const pad = 8;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = Math.max(0.0001, max - min);
+
+      // grade
+      ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 3; i++) {
+        const y = pad + ((cssH - pad * 2) * i) / 3;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(cssW - pad, y);
+        ctx.stroke();
+      }
+
+      const pt = (i, v) => ({
+        x: pad + ((cssW - pad * 2) * i) / (values.length - 1),
+        y: cssH - pad - ((v - min) / range) * (cssH - pad * 2),
+      });
+
+      // área
+      ctx.beginPath();
+      ctx.moveTo(pt(0, values[0]).x, cssH - pad);
+      for (let i = 0; i < values.length; i++) {
+        const p = pt(i, values[i]);
+        ctx.lineTo(p.x, p.y);
+      }
+      ctx.lineTo(pt(values.length - 1, values[values.length - 1]).x, cssH - pad);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, 0, cssH);
+      grad.addColorStop(0, fillColor || 'rgba(34,211,238,0.35)');
+      grad.addColorStop(1, 'rgba(34,211,238,0.02)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // linha
+      ctx.beginPath();
+      for (let i = 0; i < values.length; i++) {
+        const p = pt(i, values[i]);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.strokeStyle = color || '#22D3EE';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // ---- Mapa Leaflet ----
+    function renderMap(points) {
+      const el = document.getElementById('routeMap');
+      if (routeMap) {
+        routeMap.remove();
+        routeMap = null;
+      }
+      if (!window.L) return;
+      if (!points || points.length < 2) {
+        el.innerHTML = '<div class="empty-state" style="padding:40px 12px;border:none;">Sem percurso GPS registrado</div>';
+        return;
+      }
+      el.innerHTML = '';
+      routeMap = L.map(el, {
+        zoomControl: true,
+        attributionControl: true,
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap',
+      }).addTo(routeMap);
+
+      const latlngs = points.map((p) => [p.lat, p.lng]);
+      routeLayer = L.polyline(latlngs, {
+        color: '#22D3EE',
+        weight: 4,
+        opacity: 0.9,
+      }).addTo(routeMap);
+
+      L.circleMarker(latlngs[0], {
+        radius: 7,
+        color: '#34D399',
+        fillColor: '#34D399',
+        fillOpacity: 1,
+      }).addTo(routeMap).bindPopup('Início');
+
+      L.circleMarker(latlngs[latlngs.length - 1], {
+        radius: 7,
+        color: '#F87171',
+        fillColor: '#F87171',
+        fillOpacity: 1,
+      }).addTo(routeMap).bindPopup('Fim');
+
+      routeMap.fitBounds(routeLayer.getBounds(), { padding: [24, 24] });
+      setTimeout(() => routeMap && routeMap.invalidateSize(), 120);
+    }
+
+    async function abrirDetalhe(id) {
+      const bridge = activityBridge();
+      if (!bridge) return;
+      let data;
+      try {
+        data = JSON.parse(bridge.getActivity(id));
+      } catch (_) {
+        showToast('Erro ao abrir atividade');
+        return;
+      }
+      if (!data || data.found === false) {
+        showToast('Atividade não encontrada');
+        return;
+      }
+
+      currentActivityId = data.id;
+      mostrarTela('detail');
+      document.getElementById('detailTitle').textContent = data.title || 'Atividade';
+      document.getElementById('dDistance').textContent = formatKm(data.distance || 0);
+      document.getElementById('dDuration').textContent = formatDuration(data.durationSec);
+      document.getElementById('dPace').textContent = formatPace(data.avgPaceMinKm);
+      document.getElementById('dAvgSpeed').textContent = formatKmh(data.avgSpeed || 0);
+      document.getElementById('dMaxSpeed').textContent = formatKmh(data.maxSpeed || 0);
+
+      const points = data.points || [];
+      let goalTxt = '—';
+      try {
+        const steps = data.steps || [];
+        const g = steps.find((s) => s && s.goalKm);
+        if (g) goalTxt = `${Number(g.goalKm).toFixed(1).replace('.', ',')} km`;
+      } catch (_) {}
+      document.getElementById('dGoal').textContent = goalTxt;
+
+      renderMap(points);
+
+      // amostra para gráficos (máx ~200 pts)
+      const step = Math.max(1, Math.floor(points.length / 200));
+      const speeds = [];
+      const elevs = [];
+      for (let i = 0; i < points.length; i += step) {
+        speeds.push((points[i].speed || 0) * 3.6);
+        elevs.push(points[i].alt || 0);
+      }
+      drawChart(document.getElementById('chartSpeed'), speeds, '#22D3EE', 'rgba(34,211,238,0.35)');
+      drawChart(document.getElementById('chartElev'), elevs, '#A78BFA', 'rgba(167,139,250,0.35)');
+
+      renderBestPaces(points);
+      renderSplits(points);
+    }
+
+    // ---- Export GPX (upload no Strava) ----
+    function buildGpx(points, title, startedAt, endedAt) {
+      const esc = (s) => String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const iso = (ts) => new Date(ts).toISOString();
+      const trkpts = (points || []).map((p) => {
+        const t = new Date(p.ts).toISOString();
+        const alt = (p.alt || 0).toFixed(1);
+        return `      <trkpt lat="${p.lat.toFixed(7)}" lon="${p.lng.toFixed(7)}"><ele>${alt}</ele><time>${t}</time></trkpt>`;
+      }).join('\n');
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Timer Ciclico" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>${esc(title)}</name>
+    <time>${iso(startedAt)}</time>
+  </metadata>
+  <trk>
+    <name>${esc(title)}</name>
+    <trkseg>
+${trkpts}
+    </trkseg>
+  </trk>
+</gpx>`;
+    }
+
+    document.getElementById('btnExportGpx').addEventListener('click', async () => {
+      const bridge = activityBridge();
+      if (!bridge || currentActivityId == null) {
+        showToast('Nenhuma atividade selecionada');
+        return;
+      }
+      let data;
+      try {
+        data = JSON.parse(bridge.getActivity(currentActivityId));
+      } catch (_) {
+        showToast('Erro ao carregar atividade');
+        return;
+      }
+      const points = data.points || [];
+      if (points.length < 2) {
+        showToast('Atividade sem pontos GPS suficientes');
+        return;
+      }
+      const gpx = buildGpx(points, data.title || 'Treino', data.startedAt, data.endedAt);
+      const filename = `atividade-${data.id}.gpx`;
+      const file = new File([gpx], filename, { type: 'application/gpx+xml' });
+
+      // 1) Compartilhamento nativo (Android) — abre a folha "compartilhar" (Strava aparece lá)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: data.title || 'Treino' });
+          return;
+        } catch (_) {
+          // usuário cancelou ou share falhou → fallback download
+        }
+      }
+      // 2) Download do .gpx (upload manual em strava.com/upload)
+      try {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast('GPX exportado! Envie em strava.com/upload');
+      } catch (_) {
+        showToast('Não foi possível exportar o GPX');
+      }
+    });
+
+    document.getElementById('btnDeleteActivity').addEventListener('click', async () => {
+      const bridge = activityBridge();
+      if (!bridge || currentActivityId == null) return;
+      if (!confirm('Excluir esta atividade?')) return;
+      try {
+        bridge.deleteActivity(currentActivityId);
+        currentActivityId = null;
+        showToast('Atividade excluída');
+        mostrarTela('activities');
+        carregarListaAtividades();
+      } catch (_) {
+        showToast('Erro ao excluir');
+      }
+    });
+
+    // ---- Hooks no ciclo do timer ----
+    // GPS live poll
+    setInterval(() => {
+      if (gpsStarted || rodando) atualizarGpsLive();
+    }, 1000);
+
+    // Permissão cedo para não atrasar o primeiro Play
+    setTimeout(() => {
+      try {
+        const bridge = activityBridge();
+        if (bridge && !bridge.hasLocationPermission()) {
+          // não dispara diálogo sozinho; só marca o status
+          gpsStatusText.textContent = 'Toque em Play e permita a localização';
+        }
+      } catch (_) {}
+    }, 800);
 
     // Inicialização
     // Garante que indiceAtual aponte para uma etapa ativa

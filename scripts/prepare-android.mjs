@@ -62,6 +62,9 @@ const PERMS = [
   'android.permission.INTERNET',
   'android.permission.FOREGROUND_SERVICE',
   'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
+  'android.permission.FOREGROUND_SERVICE_LOCATION',
+  'android.permission.ACCESS_FINE_LOCATION',
+  'android.permission.ACCESS_COARSE_LOCATION',
   'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
 ];
 
@@ -69,7 +72,7 @@ const SERVICE_XML = `
         <service
             android:name=".TimerService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback|location" />
 
         <receiver
             android:name=".AlertReceiver"
@@ -104,10 +107,10 @@ xml = xml.replace(/\s*<!-- Permissions -->\s*/g, '\n');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 if (xml.includes('android:versionCode')) {
-  xml = xml.replace(/android:versionCode="\d+"/, 'android:versionCode="3"');
+  xml = xml.replace(/android:versionCode="\d+"/, 'android:versionCode="4"');
   xml = xml.replace(/android:versionName="[^"]*"/, `android:versionName="${pkg.version}"`);
 } else {
-  xml = xml.replace('<manifest', `<manifest android:versionCode="3" android:versionName="${pkg.version}"`);
+  xml = xml.replace('<manifest', `<manifest android:versionCode="4" android:versionName="${pkg.version}"`);
 }
 
 fs.writeFileSync(manifestPath, xml);
